@@ -1,0 +1,254 @@
+:root {
+    --primary_green: #49fe8c;
+}
+
+* {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+}
+
+header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    gap: 12px;
+
+    background-color: lightskyblue;
+    border-bottom: 1px solid gray;
+}
+
+header input[type="text"] {
+    outline: none;
+    background: none;
+    border: 1px solid gray;
+    border-radius: 4px;
+    padding: 6px;
+
+    min-width: 32%;
+}
+
+header .search-button {
+    border: none;
+    color: white;
+    background-color: var(--primary_green);
+    padding: 6px;
+    
+    -webkit-box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.8);
+    -moz-box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.8);
+    box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.8);
+}
+
+header .logo {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.profile {
+    width: 150px;
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+.avatar {
+    width: 40px;
+    border: solid 1px black;
+}
+
+.profile-info {
+    width: 110px;
+}
+
+.profile-actions {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+}
+
+main {
+    display: flex;
+    justify-content: start;
+    margin-bottom: 32px;
+}
+
+.main-container {
+    margin-top: 24px;
+    width: 70%;
+    padding: 0 24px;
+}
+
+.main-container h2 {
+    font-size: 24px;
+    font-family: "Coming Soon", cursive;
+    margin-left: 32px;
+}
+
+.questions-list {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.question {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    padding: 6px;
+    border: 1px solid black;
+}
+
+.question-avatar-n-rating {
+    width: 15%;
+}
+
+.question-avatar {
+    height: 50%;
+    width: 64px;
+    border: solid 1px black;
+}
+
+.question-rating {
+    height: 50%;
+    width: 64px;
+    display: flex;
+    align-items: center;
+}
+
+.question-rating input {
+    width: 100%;
+    height: 50%;
+    text-align: center;
+    font-family: "Coming Soon", cursive;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    opacity: 1;
+    margin: 0;
+}
+
+.question-text a {
+    font-size: 20px;
+    font-family: "Coming Soon", cursive;
+}
+
+.question-text p {
+    font-size: 16px;
+    font-family: "Coming Soon", cursive;
+}
+
+.question-answers-n-tags {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 32px;
+    margin-top: 8px;
+}
+
+.question-answers-n-tags a {
+    margin: 0;
+    padding: 0;
+    font-size: 16px;
+}
+
+.question-tags {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+/* .question-tags {
+    width: 80%;
+    display: flex;
+    flex-direction: row;
+    justify-content: left;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    margin-top: 16px;
+}
+
+.question-tags a {
+    font-size: clamp(0.5rem, 2vw, 1rem);
+    font-family: "Coming Soon", cursive;
+    word-break: break-word;
+}
+
+.question-tags p {
+    font-size: clamp(0.5rem, 2vw, 1rem);
+    font-family: "Coming Soon", cursive;
+    overflow-wrap: break-word;
+} */
+
+.pagination {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    margin-top: 20px;
+    margin-left: 24px;
+}
+
+.pagination > * {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: solid 1px black;
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+}
+
+.page-num-lock {
+    cursor: not-allowed;
+}
+
+aside {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    margin-top: 24px;
+    width: 30%;
+    padding: 0 24px;
+}
+
+.tags-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.tags {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    font-family: "Coming Soon", cursive;
+}
+
+.tags > * {
+    text-decoration: none;
+}
+
+.text-red {
+    color: red;
+}
+
+.text-green {
+    color: green;
+}
+
+.text-orange {
+    color: orange;
+}
+
+.members {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+    font-family: "Coming Soon", cursive;
+}
