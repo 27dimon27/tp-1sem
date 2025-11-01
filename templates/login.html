@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Log In - AskPupkin{% endblock %}
+
+{% block content %}
+<div class="px-3">
+    <h2 class="mb-4">Log In</h2>
+
+    <form class="d-flex flex-column gap-4 ms-3">
+        <div class="row">
+            <label for="login" class="col-sm-2 col-form-label">Login</label>
+            <div class="col-sm-4">
+                <input type="text" class="form-control" id="login" placeholder="Enter your login">
+                <div class="error-text">Login can't be empty</div>
+            </div>
+        </div>
+
+        <div class="row">
+            <label for="password" class="col-sm-2 col-form-label">Password</label>
+            <div class="col-sm-4">
+                <input type="password" class="form-control" id="password" placeholder="Enter your password">
+                <div class="error-text">Password can't be empty</div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-2"></div>
+            <div class="col-sm-4 d-flex align-items-center gap-4">
+                <button type="submit" class="btn login-btn">Log In</button>
+                <a href="{% url 'app:signup' %}"
+                    class="create-new-account-link text-decoration-none d-flex justify-content-center align-content-center">create
+                    new account</a>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-2"></div>
+            <div class="col-sm-4">
+                <p class="error-text">Sorry, wrong password!</p>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

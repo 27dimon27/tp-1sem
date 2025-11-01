@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if is_tag_page %}
+        Tag: {{ current_tag }} - AskPupkin
+    {% else %}
+        {{ page_title }} - AskPupkin
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="px-3">
+    <h2 class="mb-3">
+        {% if is_tag_page %}
+            Tag: {{ current_tag }}
+        {% else %}
+            {{ page_title }}
+            {% if page_title == 'New Questions' %}
+                <a href="{% url 'app:hot' %}" class="fs-6 text-decoration-none text-info ms-2">Hot Questions</a>
+            {% else %}
+                <a href="{% url 'app:index' %}" class="fs-6 text-decoration-none text-info ms-2">New Questions</a>
+            {% endif %}
+        {% endif %}
+    </h2>
+
+    <div class="d-flex flex-column gap-3">
+        {% for question in questions %}
+        <div class="question d-flex gap-3">
+            <div class="question-avatar-n-rating d-flex flex-column align-items-center">
+                <img src="/static/img/question.png" alt="Question Avatar" class="question-avatar mb-2">
+                <div class="rating">
+                    <div class="rating-value">{{ question.rating }}</div>
+                    <div class="rating-buttons">
+                        <button class="rating-up-btn">↑</button>
+                        <button class="rating-down-btn">↓</button>
+                    </div>
+                </div>
+            </div>
+            <div class="question-answers-n-tags flex-grow-1">
+                <a href="{% url 'app:question' question.id %}" class="fs-5 text-decoration-none">{{ question.title }}</a>
+                <p class="mt-2 question-text">{{ question.text }}</p>
+                <div class="d-flex align-items-center gap-4 mt-2">
+                    <a href="{% url 'app:question' question.id %}" class="text-decoration-none">answer ({{ question.answers_count }})</a>
+                    <div class="d-flex align-items-center gap-2">
+                        <p class="mb-0">Tags:</p>
+                        {% for tag in question.tags %}
+                            <a href="{% url 'app:tag' tag %}" class="text-decoration-none">{{ tag }}</a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% include 'pagination.html' with page_obj=questions %}
+</div>
+{% endblock %}

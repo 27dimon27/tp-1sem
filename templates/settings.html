@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Account Settings - AskPupkin{% endblock %}
+
+{% block content %}
+<div class="px-3">
+    <h2 class="mb-4">Settings: Dr. Pepper</h2>
+
+    <form class="d-flex flex-column gap-4 ms-3">
+        <div class="row">
+            <label for="email" class="col-sm-2 col-form-label">Email</label>
+            <div class="col-sm-4">
+                <input type="email" class="form-control" id="email" value="dr.pepper@example.com">
+                <div class="error-text">Email can't be empty</div>
+            </div>
+        </div>
+
+        <div class="row">
+            <label for="nickname" class="col-sm-2 col-form-label">Nickname</label>
+            <div class="col-sm-4">
+                <input type="text" class="form-control" id="nickname" value="Dr. Pepper">
+                <div class="error-text">Nickname can't be empty</div>
+            </div>
+        </div>
+
+        <div class="row">
+            <label for="avatar" class="col-sm-2 col-form-label">Upload Avatar</label>
+            <div class="col-sm-4">
+                <img src="/static/img/account-image.jpg" alt="Current Avatar" class="mb-2">
+                <input type="file" class="form-control" id="avatar">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-2"></div>
+            <div class="col-sm-4">
+                <button type="submit" class="btn save-btn">Save</button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

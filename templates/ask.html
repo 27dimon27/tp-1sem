@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Ask Question - AskPupkin{% endblock %}
+
+{% block content %}
+<div class="px-3">
+    <h2 class="mb-3">New Question</h2>
+
+    <form>
+        <div class="mb-3 row">
+            <label for="questionTitle" class="col-sm-1 col-form-label">Title</label>
+            <div class="col-sm-8">
+                <input type="text" class="form-control" id="questionTitle" name="title"
+                    placeholder="Enter your question title">
+                <div class="error-text">Title can't be empty</div>
+            </div>
+        </div>
+
+        <div class="mb-3 row">
+            <label for="questionText" class="col-sm-1 col-form-label">Text</label>
+            <div class="col-sm-8">
+                <textarea class="form-control" id="questionText" name="text" rows="8"
+                    placeholder="Describe your question in detail"></textarea>
+                <div class="error-text">Question text can't be empty</div>
+            </div>
+        </div>
+
+        <div class="mb-3 row">
+            <label for="questionTags" class="col-sm-1 col-form-label">Tags</label>
+            <div class="col-sm-8">
+                <input type="text" class="form-control" id="questionTags" name="tags"
+                    placeholder="Enter tags separated by commas">
+                <div class="error-text">At least one tag is required</div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-1"></div>
+            <div class="col-sm-1">
+                <button type="submit" class="btn ask-btn">ASK!</button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

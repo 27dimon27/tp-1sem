@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ question.title }} - AskPupkin{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/question.css">
+{% endblock %}
+
+{% block content %}
+<div class="px-3">
+    <div class="question d-flex gap-3 mb-4">
+        <div class="question-avatar-n-rating d-flex flex-column align-items-center">
+            <img src="/static/img/question.png" alt="User Avatar" class="question-avatar mb-2">
+            <div class="rating">
+                <div class="rating-value">{{ question.rating }}</div>
+                <div class="rating-buttons">
+                    <button class="rating-up-btn">↑</button>
+                    <button class="rating-down-btn">↓</button>
+                </div>
+            </div>
+        </div>
+        <div class="question-answers-n-tags flex-grow-1">
+            <h2>{{ question.title }}</h2>
+            <p class="mt-2">{{ question.text }}</p>
+            <div class="d-flex align-items-center gap-4 mt-2">
+                <p class="mb-0">Tags:</p>
+                {% for tag in question.tags %}
+                <a href="{% url 'app:tag' tag %}" class="text-decoration-none">{{ tag }}</a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <hr>
+
+    <div class="mb-4">
+        <h3 class="mb-3">Answers</h3>
+
+        <div class="d-flex flex-column gap-3">
+            {% for answer in answers %}
+            <div class="answer d-flex gap-3">
+                <div class="answer-avatar-n-rating d-flex flex-column align-items-center">
+                    <img src="/static/img/answer.png" alt="User Avatar" class="answer-avatar mb-2">
+                    <div class="rating">
+                        <div class="rating-value">{{ answer.rating }}</div>
+                        <div class="rating-buttons">
+                            <button class="rating-up-btn">↑</button>
+                            <button class="rating-down-btn">↓</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="answer-answers-n-tags flex-grow-1">
+                    <p class="mt-2">{{ answer.text }}</p>
+                    <div class="correct-checkbox">
+                        <input type="checkbox" id="correct{{ answer.id }}" {% if answer.is_correct %}checked{% endif %}>
+                        <label for="correct{{ answer.id }}">Correct!</label>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% include 'pagination.html' with page_obj=answers %}
+
+    <hr>
+
+    <form class="mb-3">
+        <h3 class="mb-3">Enter your answer</h3>
+        <textarea class="form-control" name="answer" rows="8" placeholder="Type your answer here..."></textarea>
+        <div class="error-text mt-1">Answer can't be empty</div>
+        <button type="submit" class="btn answer-btn mt-3">Answer!</button>
+    </form>
+</div>
+{% endblock %}
