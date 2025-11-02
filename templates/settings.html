@@ -6,11 +6,11 @@
 <div class="px-3">
     <h2 class="mb-4">Settings: Dr. Pepper</h2>
 
-    <form class="d-flex flex-column gap-4 ms-3">
+    <form class="d-flex flex-column gap-4 ms-3" method="post" enctype="multipart/form-data">
         <div class="row">
             <label for="email" class="col-sm-2 col-form-label">Email</label>
             <div class="col-sm-4">
-                <input type="email" class="form-control" id="email" value="dr.pepper@example.com">
+                <input type="email" class="form-control" id="email" value="dr.pepper@example.com" required>
                 <div class="error-text">Email can't be empty</div>
             </div>
         </div>
@@ -18,7 +18,7 @@
         <div class="row">
             <label for="nickname" class="col-sm-2 col-form-label">Nickname</label>
             <div class="col-sm-4">
-                <input type="text" class="form-control" id="nickname" value="Dr. Pepper">
+                <input type="text" class="form-control" id="nickname" value="Dr. Pepper" required>
                 <div class="error-text">Nickname can't be empty</div>
             </div>
         </div>

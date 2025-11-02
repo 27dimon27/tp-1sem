@@ -6,12 +6,12 @@
 <div class="px-3">
     <h2 class="mb-3">New Question</h2>
 
-    <form>
+    <form method="post">
         <div class="mb-3 row">
             <label for="questionTitle" class="col-sm-1 col-form-label">Title</label>
             <div class="col-sm-8">
                 <input type="text" class="form-control" id="questionTitle" name="title"
-                    placeholder="Enter your question title">
+                    placeholder="Enter your question title" required>
                 <div class="error-text">Title can't be empty</div>
             </div>
         </div>
@@ -20,7 +20,7 @@
             <label for="questionText" class="col-sm-1 col-form-label">Text</label>
             <div class="col-sm-8">
                 <textarea class="form-control" id="questionText" name="text" rows="8"
-                    placeholder="Describe your question in detail"></textarea>
+                    placeholder="Describe your question in detail" required></textarea>
                 <div class="error-text">Question text can't be empty</div>
             </div>
         </div>
@@ -29,7 +29,7 @@
             <label for="questionTags" class="col-sm-1 col-form-label">Tags</label>
             <div class="col-sm-8">
                 <input type="text" class="form-control" id="questionTags" name="tags"
-                    placeholder="Enter tags separated by commas">
+                    placeholder="Enter tags separated by commas" required>
                 <div class="error-text">At least one tag is required</div>
             </div>
         </div>
