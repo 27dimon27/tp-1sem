@@ -57,7 +57,7 @@
                     <div class="px-3">
                         <h2 class="mb-4">Settings: Dr. Pepper</h2>
 
-                        <form class="d-flex flex-column gap-4 ms-3">
+                        <form class="d-flex flex-column gap-4 ms-3" method="post" enctype="multipart/form-data">
                             <div class="row">
                                 <label
                                     for="email"
@@ -70,6 +70,7 @@
                                         class="form-control"
                                         id="email"
                                         value="dr.pepper@example.com"
+                                        required
                                     />
                                     <div class="error-text">
                                         Email can't be empty
@@ -89,6 +90,7 @@
                                         class="form-control"
                                         id="nickname"
                                         value="Dr. Pepper"
+                                        required
                                     />
                                     <div class="error-text">
                                         Nickname can't be empty

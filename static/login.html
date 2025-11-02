@@ -58,7 +58,7 @@
                     <div class="px-3">
                         <h2 class="mb-4">Log In</h2>
 
-                        <form class="d-flex flex-column gap-4 ms-3">
+                        <form class="d-flex flex-column gap-4 ms-3" method="post">
                             <div class="row">
                                 <label
                                     for="login"
@@ -71,6 +71,7 @@
                                         class="form-control"
                                         id="login"
                                         placeholder="Enter your login"
+                                        required
                                     />
                                     <div class="error-text">
                                         Login can't be empty
@@ -90,6 +91,7 @@
                                         class="form-control"
                                         id="password"
                                         placeholder="Enter your password"
+                                        required
                                     />
                                     <div class="error-text">
                                         Password can't be empty

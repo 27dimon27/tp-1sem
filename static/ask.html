@@ -57,7 +57,7 @@
                     <div class="px-3">
                         <h2 class="mb-3">New Question</h2>
 
-                        <form>
+                        <form method="post">
                             <div class="mb-3 row">
                                 <label
                                     for="questionTitle"
@@ -71,6 +71,7 @@
                                         id="questionTitle"
                                         name="title"
                                         placeholder="Enter your question title"
+                                        required
                                     />
                                     <div class="error-text">
                                         Title can't be empty
@@ -91,6 +92,7 @@
                                         name="text"
                                         rows="8"
                                         placeholder="Describe your question in detail"
+                                        required
                                     ></textarea>
                                     <div class="error-text">
                                         Question text can't be empty
@@ -111,6 +113,7 @@
                                         id="questionTags"
                                         name="tags"
                                         placeholder="Enter tags separated by commas"
+                                        required
                                     />
                                     <div class="error-text">
                                         At least one tag is required
