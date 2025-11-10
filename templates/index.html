@@ -2,9 +2,9 @@
 
 {% block title %}
     {% if is_tag_page %}
-        Tag: {{ current_tag }} - AskPupkin
+        Tag: {{ current_tag }} - AskNagdasev
     {% else %}
-        {{ page_title }} - AskPupkin
+        {{ page_title }} - AskNagdasev
     {% endif %}
 {% endblock %}
 
@@ -38,13 +38,13 @@
             </div>
             <div class="question-answers-n-tags flex-grow-1">
                 <a href="{% url 'app:question' question.id %}" class="fs-5 text-decoration-none">{{ question.title }}</a>
-                <p class="mt-2 question-text">{{ question.text }}</p>
+                <p class="mt-2 question-text">{{ question.text|truncatewords:30 }}</p>
                 <div class="d-flex align-items-center gap-4 mt-2">
-                    <a href="{% url 'app:question' question.id %}" class="text-decoration-none">answer ({{ question.answers_count }})</a>
+                    <a href="{% url 'app:question' question.id %}" class="text-decoration-none">answer ({{ question.answer_set.count }})</a>
                     <div class="d-flex align-items-center gap-2">
                         <p class="mb-0">Tags:</p>
-                        {% for tag in question.tags %}
-                            <a href="{% url 'app:tag' tag %}" class="text-decoration-none">{{ tag }}</a>
+                        {% for tag in question.tags.all %}
+                            <a href="{% url 'app:tag' tag.name %}" class="text-decoration-none">{{ tag.name }}</a>
                         {% endfor %}
                     </div>
                 </div>
