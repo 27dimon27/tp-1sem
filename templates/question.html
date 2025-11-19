@@ -10,7 +10,11 @@
 <div class="px-3">
     <div class="question d-flex gap-3 mb-4">
         <div class="question-avatar-n-rating d-flex flex-column align-items-center">
-            <img src="/static/img/question.png" alt="User Avatar" class="question-avatar mb-2">
+            {% if question.author.profile.avatar %}
+                <img src="{{ question.author.profile.avatar.url }}" alt="User Avatar" class="question-avatar mb-2">
+            {% else %}
+                <img src="/static/img/question.png" alt="User Avatar" class="question-avatar mb-2">
+            {% endif %}
             <div class="rating">
                 <div class="rating-value">{{ question.rating }}</div>
                 <div class="rating-buttons">
@@ -40,7 +44,11 @@
             {% for answer in answers %}
             <div class="answer d-flex gap-3">
                 <div class="answer-avatar-n-rating d-flex flex-column align-items-center">
-                    <img src="/static/img/answer.png" alt="User Avatar" class="answer-avatar mb-2">
+                    {% if answer.author.profile.avatar %}
+                        <img src="{{ answer.author.profile.avatar.url }}" alt="User Avatar" class="answer-avatar mb-2">
+                    {% else %}
+                        <img src="/static/img/answer.png" alt="User Avatar" class="answer-avatar mb-2">
+                    {% endif %}
                     <div class="rating">
                         <div class="rating-value">{{ answer.rating }}</div>
                         <div class="rating-buttons">

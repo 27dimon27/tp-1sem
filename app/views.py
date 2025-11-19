@@ -1,6 +1,6 @@
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.shortcuts import render, get_object_or_404
-from .models import Question
+from .models import Question, Tag
 
 
 def paginate(objects_list, request, per_page=10):
@@ -34,7 +34,8 @@ def hot_questions(request):
 
 
 def tag_questions(request, tag_name):
-    questions = Question.objects.questions_by_tag(tag_name)
+    tag = get_object_or_404(Tag, name=tag_name)
+    questions = Question.objects.questions_by_tag(tag)
     page = paginate(questions, request, 5)
     return render(
         request,
