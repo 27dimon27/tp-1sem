@@ -28,9 +28,13 @@
             <p class="mt-2">{{ question.text }}</p>
             <div class="d-flex align-items-center gap-4 mt-2">
                 <p class="mb-0">Tags:</p>
-                {% for tag in question.tags.all %}
-                <a href="{% url 'app:tag' tag %}" class="text-decoration-none">{{ tag.name }}</a>
-                {% endfor %}
+                {% if question.tags.all %}
+                    {% for tag in question.tags.all %}
+                        <a href="{% url 'app:tag' tag %}" class="text-decoration-none">{{ tag.name }}</a>
+                    {% endfor %}
+                {% else %}
+                    <span class="text-muted">No tags</span>
+                {% endif %}
             </div>
         </div>
     </div>

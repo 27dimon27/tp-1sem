@@ -1,33 +1,47 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Account Settings - AskNagdasev{% endblock %}
 
 {% block content %}
 <div class="px-3">
-    <h2 class="mb-4">Settings: Dr. Pepper</h2>
+    <h2 class="mb-4">Settings: {{ user.username }}</h2>
 
     <form class="d-flex flex-column gap-4 ms-3" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
         <div class="row">
-            <label for="email" class="col-sm-2 col-form-label">Email</label>
+            <label for="id_email" class="col-sm-2 col-form-label">Email</label>
             <div class="col-sm-4">
-                <input type="email" class="form-control" id="email" value="dr.pepper@example.com" required>
-                <div class="error-text">Email can't be empty</div>
+                {{ form.email }}
+                {% if form.email.errors %}
+                    <div class="error-text">{{ form.email.errors }}</div>
+                {% endif %}
             </div>
         </div>
 
         <div class="row">
-            <label for="nickname" class="col-sm-2 col-form-label">Nickname</label>
+            <label for="id_username" class="col-sm-2 col-form-label">Nickname</label>
             <div class="col-sm-4">
-                <input type="text" class="form-control" id="nickname" value="Dr. Pepper" required>
-                <div class="error-text">Nickname can't be empty</div>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <div class="error-text">{{ form.username.errors }}</div>
+                {% endif %}
             </div>
         </div>
 
         <div class="row">
-            <label for="avatar" class="col-sm-2 col-form-label">Upload Avatar</label>
+            <label for="id_avatar" class="col-sm-2 col-form-label">Upload Avatar</label>
             <div class="col-sm-4">
-                <img src="/static/img/account-image.jpg" alt="Current Avatar" class="mb-2">
-                <input type="file" class="form-control" id="avatar">
+                {% if user.profile.avatar %}
+                    <img src="{{ user.profile.avatar.url }}" alt="Current Avatar" class="mb-2" style="max-width: 100px;">
+                {% else %}
+                    <img src="{% static 'img/account-image.jpg' %}" alt="Current Avatar" class="mb-2" style="max-width: 100px;">
+                {% endif %}
+                {{ profile_form.avatar }}
+                {% if profile_form.avatar.errors %}
+                    <div class="error-text">{{ profile_form.avatar.errors }}</div>
+                {% endif %}
             </div>
         </div>
 

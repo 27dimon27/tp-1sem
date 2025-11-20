@@ -47,9 +47,13 @@
                     <a href="{% url 'app:question' question.id %}" class="text-decoration-none">answer ({{ question.answer_set.count }})</a>
                     <div class="d-flex align-items-center gap-2">
                         <p class="mb-0">Tags:</p>
-                        {% for tag in question.tags.all %}
-                            <a href="{% url 'app:tag' tag.name %}" class="text-decoration-none">{{ tag.name }}</a>
-                        {% endfor %}
+                        {% if question.tags.all %}
+                            {% for tag in question.tags.all %}
+                                <a href="{% url 'app:tag' tag.name %}" class="text-decoration-none">{{ tag.name }}</a>
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-muted">No tags</span>
+                        {% endif %}
                     </div>
                 </div>
             </div>
