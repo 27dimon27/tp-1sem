@@ -32,11 +32,7 @@ def paginate(objects_list, request, per_page=10):
 
 
 def index(request):
-    questions = (
-        Question.objects.new_questions()
-        .select_related("author")
-        .prefetch_related("tags")
-    )
+    questions = Question.objects.new_questions()
     page = paginate(questions, request, 5)
     context = {"questions": page, "page_title": "New Questions"}
     context.update(get_common_context())
@@ -44,11 +40,7 @@ def index(request):
 
 
 def hot_questions(request):
-    questions = (
-        Question.objects.best_questions()
-        .select_related("author")
-        .prefetch_related("tags")
-    )
+    questions = Question.objects.best_questions()
     page = paginate(questions, request, 5)
     context = {"questions": page, "page_title": "Hot Questions"}
     context.update(get_common_context())
@@ -60,7 +52,7 @@ def tag_questions(request, tag_name):
     questions = (
         Question.objects.questions_by_tag(tag)
         .select_related("author")
-        .prefetch_related("tags")
+        .prefetch_related("tags", "author__profile", "answer_set")
         .order_by("-created_date")
     )
     page = paginate(questions, request, 5)

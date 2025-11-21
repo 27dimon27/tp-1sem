@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}
     {% if is_tag_page %}
@@ -30,7 +31,7 @@
                 {% if question.author.profile.avatar %}
                     <img src="{{ question.author.profile.avatar.url }}" alt="User Avatar" class="question-avatar mb-2">
                 {% else %}
-                    <img src="/static/img/question.png" alt="User Avatar" class="question-avatar mb-2">
+                    <img src="{% static 'img/question.png' %}" alt="User Avatar" class="question-avatar mb-2">
                 {% endif %}
                 <div class="rating">
                     <div class="rating-value">{{ question.rating }}</div>

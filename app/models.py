@@ -24,9 +24,12 @@ def validate_like_value(value):
 
 class ProfileManager(models.Manager):
     def best_members(self, limit=10):
-        return self.annotate(total_rating=Sum("user__question__rating")).order_by(
-            "-total_rating"
-        )[:limit]
+        return (
+            self.select_related('user')
+            .annotate(questions_count=Count('user__question'))
+            .filter(questions_count__gt=0)
+            .order_by('-questions_count')[:limit]
+        )
 
 
 class Profile(models.Model):
@@ -68,12 +71,18 @@ class QuestionManager(models.Manager):
         return (
             self.select_related("author")
             .prefetch_related("tags")
+            .prefetch_related("author__profile")
+            .prefetch_related("answer_set")
             .order_by("-created_date")
         )
 
     def best_questions(self):
         return (
-            self.select_related("author").prefetch_related("tags").order_by("-rating")
+            self.select_related("author")
+            .prefetch_related("tags")
+            .prefetch_related("author__profile")
+            .prefetch_related("answer_set")
+            .order_by("-rating")
         )
 
     def questions_by_tag(self, tag_name):
@@ -81,6 +90,8 @@ class QuestionManager(models.Manager):
             self.filter(tags__name=tag_name)
             .select_related("author")
             .prefetch_related("tags")
+            .prefetch_related("author__profile")
+            .prefetch_related("answer_set")
             .order_by("-created_date")
         )
 
