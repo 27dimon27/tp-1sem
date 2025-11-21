@@ -24,13 +24,9 @@ def validate_like_value(value):
 
 class ProfileManager(models.Manager):
     def best_members(self, limit=10):
-        return (
-            self.select_related("user")
-            .annotate(
-                total_rating=Sum("user__question__rating") + Sum("user__answer__rating")
-            )
-            .order_by("-total_rating")[:limit]
-        )
+        return self.annotate(total_rating=Sum("user__question__rating")).order_by(
+            "-total_rating"
+        )[:limit]
 
 
 class Profile(models.Model):

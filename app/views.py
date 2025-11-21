@@ -5,19 +5,11 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from .models import Question, Tag, Profile
 from .forms import SettingsForm, ProfileForm
-from django.core.cache import cache
 
 
 def get_common_context():
-    popular_tags = cache.get("popular_tags")
-    if popular_tags is None:
-        popular_tags = Tag.objects.popular_tags(8)
-        cache.set("popular_tags", popular_tags, 300)
-
-    best_members = cache.get("best_members")
-    if best_members is None:
-        best_members = Profile.objects.best_members(4)
-        cache.set("best_members", best_members, 300)
+    popular_tags = Tag.objects.popular_tags(8)
+    best_members = Profile.objects.best_members(4)
 
     return {
         "popular_tags": popular_tags,
