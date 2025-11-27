@@ -74,6 +74,7 @@ def question_detail(request, question_id):
     answers = (
         question.answer_set.all()
         .select_related("author")
+        .select_related("author__profile")
         .order_by("-rating", "-created_date")
     )
     page = paginate(answers, request, 5)
@@ -110,20 +111,22 @@ class SettingsView(LoginRequiredMixin, FormView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(get_common_context())
+        user_profile, _ = Profile.objects.get_or_create(user=self.request.user)
         if self.request.method == "POST":
             context["profile_form"] = ProfileForm(
                 self.request.POST,
                 self.request.FILES,
-                instance=self.request.user.profile,
+                instance=user_profile,
             )
         else:
-            context["profile_form"] = ProfileForm(instance=self.request.user.profile)
+            context["profile_form"] = ProfileForm(instance=user_profile)
         return context
 
     def form_valid(self, form):
         form.save()
+        user_profile, _ = Profile.objects.get_or_create(user=self.request.user)
         profile_form = ProfileForm(
-            self.request.POST, self.request.FILES, instance=self.request.user.profile
+            self.request.POST, self.request.FILES, instance=user_profile
         )
         if profile_form.is_valid():
             profile_form.save()
