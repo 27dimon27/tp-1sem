@@ -31,7 +31,7 @@
                         <p class="mb-0">{{ user.username }}</p>
                         <div class="d-flex gap-2">
                             <a href="{% url 'app:settings' %}" class="text-decoration-none">settings</a>
-                            <a href="{% url 'app:index' %}" class="text-decoration-none">logout</a>
+                            <a href="{% url 'app:logout' %}" class="text-decoration-none">logout</a>
                         </div>
                     </div>
                 {% else %}

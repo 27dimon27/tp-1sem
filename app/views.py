@@ -1,6 +1,7 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.views.generic import FormView
+from django.contrib.auth import logout
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from .models import Question, Tag, Profile
@@ -86,6 +87,11 @@ def question_detail(request, question_id):
 def login_view(request):
     context = get_common_context()
     return render(request, "login.html", context)
+
+
+def logout_view(request):
+    logout(request)
+    return redirect('app:index')
 
 
 def signup_view(request):
