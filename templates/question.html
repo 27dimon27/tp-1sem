@@ -46,7 +46,7 @@
 
         <div class="d-flex flex-column gap-3">
             {% for answer in answers %}
-            <div class="answer d-flex gap-3">
+            <div class="answer d-flex gap-3" id="answer-{{ answer.id }}">
                 <div class="answer-avatar-n-rating d-flex flex-column align-items-center">
                     {% if answer.author.profile.avatar %}
                         <img src="{{ answer.author.profile.avatar.url }}" alt="User Avatar" class="answer-avatar mb-2">
@@ -78,9 +78,12 @@
     <hr>
 
     <form class="mb-3" method="post">
+        {% csrf_token %}
         <h3 class="mb-3">Enter your answer</h3>
-        <textarea class="form-control" name="answer" rows="8" placeholder="Type your answer here..." required></textarea>
-        <div class="error-text mt-1">Answer can't be empty</div>
+        {{ form.text }}
+        {% if form.text.errors %}
+            <div class="error-text mt-1">{{ form.text.errors }}</div>
+        {% endif %}
         <button type="submit" class="btn answer-btn mt-3">Answer!</button>
     </form>
 </div>

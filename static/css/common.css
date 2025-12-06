@@ -62,7 +62,6 @@ main {
     display: flex;
     justify-content: start;
     margin-bottom: 32px;
-    /* flex: 1; */
 }
 
 .row {

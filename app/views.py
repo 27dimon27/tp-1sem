@@ -1,11 +1,13 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.views.generic import FormView
-from django.contrib.auth import logout
+from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
+from django.http import HttpRequest
 from .models import Question, Tag, Profile
-from .forms import SettingsForm, ProfileForm
+from .forms import LoginForm, SignupForm, AskForm, AnswerForm, SettingsForm, ProfileForm
 
 
 def get_common_context():
@@ -32,7 +34,7 @@ def paginate(objects_list, request, per_page=10):
     return page
 
 
-def index(request):
+def index(request: HttpRequest):
     questions = Question.objects.new_questions()
     page = paginate(questions, request, 5)
     context = {"questions": page, "page_title": "New Questions"}
@@ -40,7 +42,7 @@ def index(request):
     return render(request, "index.html", context)
 
 
-def hot_questions(request):
+def hot_questions(request: HttpRequest):
     questions = Question.objects.best_questions()
     page = paginate(questions, request, 5)
     context = {"questions": page, "page_title": "Hot Questions"}
@@ -48,7 +50,7 @@ def hot_questions(request):
     return render(request, "index.html", context)
 
 
-def tag_questions(request, tag_name):
+def tag_questions(request: HttpRequest, tag_name):
     tag = get_object_or_404(Tag, name=tag_name)
     questions = (
         Question.objects.questions_by_tag(tag)
@@ -67,7 +69,7 @@ def tag_questions(request, tag_name):
     return render(request, "index.html", context)
 
 
-def question_detail(request, question_id):
+def question_detail(request: HttpRequest, question_id):
     question = get_object_or_404(
         Question.objects.select_related("author").prefetch_related("tags"),
         id=question_id,
@@ -79,28 +81,93 @@ def question_detail(request, question_id):
         .order_by("-rating", "-created_date")
     )
     page = paginate(answers, request, 5)
-    context = {"question": question, "answers": page}
+
+    if request.method == "POST":
+        if not request.user.is_authenticated:
+            return redirect(reverse("app:login") + f"?next={request.path}")
+
+        form = AnswerForm(request.POST)
+        if form.is_valid():
+            answer = form.save(commit=False)
+            answer.question = question
+            answer.author = request.user
+            answer.save()
+
+            page_number = request.GET.get("page", 1)
+            return redirect(
+                f"{question.get_absolute_url()}?page={page_number}#answer-{answer.id}"
+            )
+    else:
+        form = AnswerForm()
+
+    context = {"question": question, "answers": page, "form": form}
     context.update(get_common_context())
     return render(request, "question.html", context)
 
 
-def login_view(request):
-    context = get_common_context()
+def login_view(request: HttpRequest):
+    if request.user.is_authenticated:
+        return redirect("app:settings")
+
+    if request.method == "POST":
+        form = LoginForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get("username")
+            password = form.cleaned_data.get("password")
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                login(request, user)
+                next_url = request.GET.get("next", "app:index")
+                return redirect(next_url)
+    else:
+        form = LoginForm()
+
+    context = {"form": form}
+    context.update(get_common_context())
     return render(request, "login.html", context)
 
 
-def logout_view(request):
+def logout_view(request: HttpRequest):
+    current_path: str = request.META.get("HTTP_REFERER")
     logout(request)
-    return redirect('app:index')
+    protected_paths = [
+        "/settings/",
+        "/ask/",
+    ]
+
+    redirect_to_index = any(current_path.endswith(path) for path in protected_paths)
+    if redirect_to_index:
+        return redirect("app:index")
+    return redirect(request.META.get("HTTP_REFERER", "app:index"))
 
 
-def signup_view(request):
-    context = get_common_context()
+def signup_view(request: HttpRequest):
+    if request.method == "POST":
+        form = SignupForm(request.POST, request.FILES)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect("app:index")
+    else:
+        form = SignupForm()
+
+    context = {"form": form}
+    context.update(get_common_context())
     return render(request, "signup.html", context)
 
 
-def ask_question(request):
-    context = get_common_context()
+@login_required(login_url="app:login")
+def ask_question(request: HttpRequest):
+    if request.method == "POST":
+        form = AskForm(request.POST)
+        if form.is_valid():
+            question = form.save(author=request.user)
+            return redirect(question.get_absolute_url())
+    else:
+        form = AskForm()
+
+    context = {"form": form}
+    context.update(get_common_context())
     return render(request, "ask.html", context)
 
 
@@ -139,6 +206,6 @@ class SettingsView(LoginRequiredMixin, FormView):
         return super().form_valid(form)
 
 
-def settings_view(request):
+def settings_view(request: HttpRequest):
     view = SettingsView.as_view()
     return view(request)

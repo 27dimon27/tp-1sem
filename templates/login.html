@@ -7,36 +7,48 @@
     <h2 class="mb-4">Log In</h2>
 
     <form class="d-flex flex-column gap-4 ms-3" method="post">
+        {% csrf_token %}
         <div class="row">
-            <label for="login" class="col-sm-2 col-form-label">Login</label>
+            <label for="id_username" class="col-sm-2 col-form-label">Login</label>
             <div class="col-sm-4">
-                <input type="text" class="form-control" id="login" placeholder="Enter your login" required>
-                <div class="error-text">Login can't be empty</div>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <div class="error-text">Login can't be empty</div>
+                {% endif %}
             </div>
         </div>
 
         <div class="row">
-            <label for="password" class="col-sm-2 col-form-label">Password</label>
+            <label for="id_password" class="col-sm-2 col-form-label">Password</label>
             <div class="col-sm-4">
-                <input type="password" class="form-control" id="password" placeholder="Enter your password" required>
-                <div class="error-text">Password can't be empty</div>
+                {{ form.password }}
+                {% if form.password.errors %}
+                    <div class="error-text">Password can't be empty</div>
+                {% endif %}
             </div>
         </div>
+
+        {% if form.non_field_errors %}
+        <div class="row">
+            <div class="col-sm-2"></div>
+            <div class="col-sm-4">
+                <div class="error-text">
+                    {% for error in form.non_field_errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
         <div class="row">
             <div class="col-sm-2"></div>
             <div class="col-sm-4 d-flex align-items-center gap-4">
                 <button type="submit" class="btn login-btn">Log In</button>
                 <a href="{% url 'app:signup' %}"
-                    class="create-new-account-link text-decoration-none d-flex justify-content-center align-content-center">create
-                    new account</a>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-sm-2"></div>
-            <div class="col-sm-4">
-                <p class="error-text">Sorry, wrong password!</p>
+                    class="create-new-account-link text-decoration-none d-flex justify-content-center align-content-center">
+                    create new account
+                </a>
             </div>
         </div>
     </form>

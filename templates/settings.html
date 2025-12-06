@@ -34,9 +34,9 @@
             <label for="id_avatar" class="col-sm-2 col-form-label">Upload Avatar</label>
             <div class="col-sm-4">
                 {% if user.profile.avatar %}
-                    <img src="{{ user.profile.avatar.url }}" alt="Current Avatar" class="mb-2" style="max-width: 100px;">
+                    <img src="{{ user.profile.avatar.url }}" alt="Current Avatar" class="mb-2">
                 {% else %}
-                    <img src="{% static 'img/account-image.jpg' %}" alt="Current Avatar" class="mb-2" style="max-width: 100px;">
+                    <img src="{% static 'img/account-image.jpg' %}" alt="Current Avatar" class="mb-2">
                 {% endif %}
                 {{ profile_form.avatar }}
                 {% if profile_form.avatar.errors %}
