@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign Up - AskPupkin{% endblock %}
+
+{% block content %}
+<div class="px-3">
+    <h2 class="mb-4">Sign Up</h2>
+
+    <form class="d-flex flex-column gap-4 ms-3" method="post" enctype="multipart/form-data">
+        <div class="row">
+            <label for="email" class="col-sm-2 col-form-label">Email</label>
+            <div class="col-sm-4">
+                <input type="email" class="form-control" id="email" placeholder="Enter your email" required>
+                <div class="error-text">Email can't be empty</div>
+            </div>
+        </div>
+
+        <div class="row">
+            <label for="nickname" class="col-sm-2 col-form-label">Nickname</label>
+            <div class="col-sm-4">
+                <input type="text" class="form-control" id="nickname" placeholder="Enter your nickname" required>
+                <div class="error-text">Nickname can't be empty</div>
+            </div>
+        </div>
+
+        <div class="row">
+            <label for="password" class="col-sm-2 col-form-label">Password</label>
+            <div class="col-sm-4">
+                <input type="password" class="form-control" id="password" placeholder="Enter your password" required>
+                <div class="error-text">Password can't be empty</div>
+            </div>
+        </div>
+
+        <div class="row">
+            <label for="repeatPassword" class="col-sm-2 col-form-label">Repeat password</label>
+            <div class="col-sm-4">
+                <input type="password" class="form-control" id="repeatPassword" placeholder="Repeat your password" required>
+                <div class="error-text">Passwords don't match</div>
+            </div>
+        </div>
+
+        <div class="row">
+            <label for="avatar" class="col-sm-2 col-form-label">Upload Avatar</label>
+            <div class="col-sm-4">
+                <img src="/static/img/account-image.jpg" alt="Current Avatar" class="mb-2">
+                <input type="file" class="form-control" id="avatar">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-2"></div>
+            <div class="col-sm-4">
+                <button type="submit" class="btn register-btn">Register</button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
