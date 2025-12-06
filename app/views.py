@@ -1,5 +1,21 @@
+from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.shortcuts import render
+from django.views.generic import FormView
+from django.contrib.auth import logout
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.urls import reverse_lazy
+from .models import Question, Tag, Profile
+from .forms import SettingsForm, ProfileForm
+
+
+def get_common_context():
+    popular_tags = Tag.objects.popular_tags(8)
+    best_members = Profile.objects.best_members(4)
+
+    return {
+        "popular_tags": popular_tags,
+        "best_members": best_members,
+    }
 
 
 def paginate(objects_list, request, per_page=10):
@@ -17,107 +33,112 @@ def paginate(objects_list, request, per_page=10):
 
 
 def index(request):
-    questions = []
-    for i in range(1, 31):
-        questions.append(
-            {
-                "title": f"How to build a moon park? {i}",
-                "id": i,
-                "text": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Facere sunt reiciendis iure dolor ex, cumque laborum quibusdam repudiandae distinctio ipsum rem aut.",
-                "answers_count": i % 10,
-                "rating": 5 - (i % 3),
-                "tags": ["black-jack", "bender"],
-            }
-        )
-
+    questions = Question.objects.new_questions()
     page = paginate(questions, request, 5)
-    return render(
-        request, "index.html", {"questions": page, "page_title": "New Questions"}
-    )
+    context = {"questions": page, "page_title": "New Questions"}
+    context.update(get_common_context())
+    return render(request, "index.html", context)
 
 
 def hot_questions(request):
-    questions = []
-    for i in range(1, 18):
-        questions.append(
-            {
-                "title": f"Hot Question {i}",
-                "id": i,
-                "text": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Facere sunt reiciendis iure dolor ex, cumque laborum quibusdam repudiandae distinctio ipsum rem aut.",
-                "answers_count": 10 + i,
-                "rating": 15 + i,
-                "tags": ["black-jack", "bender"],
-            }
-        )
-
+    questions = Question.objects.best_questions()
     page = paginate(questions, request, 5)
-    return render(
-        request, "index.html", {"questions": page, "page_title": "Hot Questions"}
-    )
+    context = {"questions": page, "page_title": "Hot Questions"}
+    context.update(get_common_context())
+    return render(request, "index.html", context)
 
 
 def tag_questions(request, tag_name):
-    questions = []
-    for i in range(1, 20):
-        questions.append(
-            {
-                "title": f"Question about {tag_name} {i}",
-                "id": i,
-                "text": f"This question is related to {tag_name} tag.",
-                "answers_count": i % 8,
-                "rating": 3 + (i % 4),
-                "tags": [tag_name],
-            }
-        )
-
-    page = paginate(questions, request, 5)
-    return render(
-        request,
-        "index.html",
-        {
-            "questions": page,
-            "page_title": f"Tag: {tag_name}",
-            "is_tag_page": True,
-            "current_tag": tag_name,
-        },
+    tag = get_object_or_404(Tag, name=tag_name)
+    questions = (
+        Question.objects.questions_by_tag(tag)
+        .select_related("author")
+        .prefetch_related("tags", "author__profile", "answer_set")
+        .order_by("-created_date")
     )
+    page = paginate(questions, request, 5)
+    context = {
+        "questions": page,
+        "page_title": f"Tag: {tag_name}",
+        "is_tag_page": True,
+        "current_tag": tag_name,
+    }
+    context.update(get_common_context())
+    return render(request, "index.html", context)
 
 
 def question_detail(request, question_id):
-    question = {
-        "title": f"How to build a moon park? {question_id}",
-        "id": question_id,
-        "text": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Facere sunt reiciendis iure dolor ex, cumque laborum quibusdam repudiandae distinctio ipsum rem aut.",
-        "rating": 5,
-        "tags": ["black-jack", "bender"],
-    }
-
-    answers = []
-    for i in range(1, 15):
-        answers.append(
-            {
-                "id": i,
-                "text": f"Answer #{i} to the question.",
-                "rating": 8 - (i % 5),
-                "is_correct": i == 3,
-            }
-        )
-
+    question = get_object_or_404(
+        Question.objects.select_related("author").prefetch_related("tags"),
+        id=question_id,
+    )
+    answers = (
+        question.answer_set.all()
+        .select_related("author")
+        .select_related("author__profile")
+        .order_by("-rating", "-created_date")
+    )
     page = paginate(answers, request, 5)
-    return render(request, "question.html", {"question": question, "answers": page})
+    context = {"question": question, "answers": page}
+    context.update(get_common_context())
+    return render(request, "question.html", context)
 
 
 def login_view(request):
-    return render(request, "login.html")
+    context = get_common_context()
+    return render(request, "login.html", context)
+
+
+def logout_view(request):
+    logout(request)
+    return redirect('app:index')
 
 
 def signup_view(request):
-    return render(request, "signup.html")
+    context = get_common_context()
+    return render(request, "signup.html", context)
 
 
 def ask_question(request):
-    return render(request, "ask.html")
+    context = get_common_context()
+    return render(request, "ask.html", context)
+
+
+class SettingsView(LoginRequiredMixin, FormView):
+    template_name = "settings.html"
+    form_class = SettingsForm
+    success_url = reverse_lazy("app:settings")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["instance"] = self.request.user
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(get_common_context())
+        user_profile, _ = Profile.objects.get_or_create(user=self.request.user)
+        if self.request.method == "POST":
+            context["profile_form"] = ProfileForm(
+                self.request.POST,
+                self.request.FILES,
+                instance=user_profile,
+            )
+        else:
+            context["profile_form"] = ProfileForm(instance=user_profile)
+        return context
+
+    def form_valid(self, form):
+        form.save()
+        user_profile, _ = Profile.objects.get_or_create(user=self.request.user)
+        profile_form = ProfileForm(
+            self.request.POST, self.request.FILES, instance=user_profile
+        )
+        if profile_form.is_valid():
+            profile_form.save()
+        return super().form_valid(form)
 
 
 def settings_view(request):
-    return render(request, "settings.html")
+    view = SettingsView.as_view()
+    return view(request)

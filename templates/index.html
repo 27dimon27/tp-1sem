@@ -1,10 +1,11 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}
     {% if is_tag_page %}
-        Tag: {{ current_tag }} - AskPupkin
+        Tag: {{ current_tag }} - AskNagdasev
     {% else %}
-        {{ page_title }} - AskPupkin
+        {{ page_title }} - AskNagdasev
     {% endif %}
 {% endblock %}
 
@@ -27,7 +28,11 @@
         {% for question in questions %}
         <div class="question d-flex gap-3">
             <div class="question-avatar-n-rating d-flex flex-column align-items-center">
-                <img src="/static/img/question.png" alt="Question Avatar" class="question-avatar mb-2">
+                {% if question.author.profile.avatar %}
+                    <img src="{{ question.author.profile.avatar.url }}" alt="User Avatar" class="question-avatar mb-2">
+                {% else %}
+                    <img src="{% static 'img/question.png' %}" alt="User Avatar" class="question-avatar mb-2">
+                {% endif %}
                 <div class="rating">
                     <div class="rating-value">{{ question.rating }}</div>
                     <div class="rating-buttons">
@@ -38,14 +43,18 @@
             </div>
             <div class="question-answers-n-tags flex-grow-1">
                 <a href="{% url 'app:question' question.id %}" class="fs-5 text-decoration-none">{{ question.title }}</a>
-                <p class="mt-2 question-text">{{ question.text }}</p>
+                <p class="mt-2 question-text">{{ question.text|truncatewords:30 }}</p>
                 <div class="d-flex align-items-center gap-4 mt-2">
-                    <a href="{% url 'app:question' question.id %}" class="text-decoration-none">answer ({{ question.answers_count }})</a>
+                    <a href="{% url 'app:question' question.id %}" class="text-decoration-none">answer ({{ question.answer_set.count }})</a>
                     <div class="d-flex align-items-center gap-2">
                         <p class="mb-0">Tags:</p>
-                        {% for tag in question.tags %}
-                            <a href="{% url 'app:tag' tag %}" class="text-decoration-none">{{ tag }}</a>
-                        {% endfor %}
+                        {% if question.tags.all %}
+                            {% for tag in question.tags.all %}
+                                <a href="{% url 'app:tag' tag.name %}" class="text-decoration-none">{{ tag.name }}</a>
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-muted">No tags</span>
+                        {% endif %}
                     </div>
                 </div>
             </div>
