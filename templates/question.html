@@ -77,7 +77,7 @@
 
     <hr>
 
-    <form class="mb-3" method="post">
+    <form class="mb-3" method="post" action="{% url 'app:create_answer' question.id %}">
         {% csrf_token %}
         <h3 class="mb-3">Enter your answer</h3>
         {{ form.text }}

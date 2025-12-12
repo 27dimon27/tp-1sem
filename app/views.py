@@ -4,10 +4,13 @@ from django.views.generic import FormView
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.urls import reverse_lazy, reverse
+from django.urls import reverse_lazy
 from django.http import HttpRequest
+from django.db import transaction
 from .models import Question, Tag, Profile
 from .forms import LoginForm, SignupForm, AskForm, AnswerForm, SettingsForm, ProfileForm
+
+ITEMS_PER_PAGE = 5
 
 
 def get_common_context():
@@ -36,7 +39,7 @@ def paginate(objects_list, request, per_page=10):
 
 def index(request: HttpRequest):
     questions = Question.objects.new_questions()
-    page = paginate(questions, request, 5)
+    page = paginate(questions, request, ITEMS_PER_PAGE)
     context = {"questions": page, "page_title": "New Questions"}
     context.update(get_common_context())
     return render(request, "index.html", context)
@@ -44,7 +47,7 @@ def index(request: HttpRequest):
 
 def hot_questions(request: HttpRequest):
     questions = Question.objects.best_questions()
-    page = paginate(questions, request, 5)
+    page = paginate(questions, request, ITEMS_PER_PAGE)
     context = {"questions": page, "page_title": "Hot Questions"}
     context.update(get_common_context())
     return render(request, "index.html", context)
@@ -58,7 +61,7 @@ def tag_questions(request: HttpRequest, tag_name):
         .prefetch_related("tags", "author__profile", "answer_set")
         .order_by("-created_date")
     )
-    page = paginate(questions, request, 5)
+    page = paginate(questions, request, ITEMS_PER_PAGE)
     context = {
         "questions": page,
         "page_title": f"Tag: {tag_name}",
@@ -67,6 +70,23 @@ def tag_questions(request: HttpRequest, tag_name):
     }
     context.update(get_common_context())
     return render(request, "index.html", context)
+
+
+@login_required(login_url="app:login")
+def create_answer(request: HttpRequest, question_id):
+    question = get_object_or_404(Question, id=question_id)
+
+    if request.method == "POST":
+        form = AnswerForm(request.POST)
+        if form.is_valid():
+            answer = form.save(commit=False)
+            answer.question = question
+            answer.author = request.user
+            answer.save()
+
+            return redirect(f"{question.get_absolute_url()}#answer-{answer.id}")
+
+    return redirect(question.get_absolute_url())
 
 
 def question_detail(request: HttpRequest, question_id):
@@ -80,25 +100,8 @@ def question_detail(request: HttpRequest, question_id):
         .select_related("author__profile")
         .order_by("-rating", "-created_date")
     )
-    page = paginate(answers, request, 5)
-
-    if request.method == "POST":
-        if not request.user.is_authenticated:
-            return redirect(reverse("app:login") + f"?next={request.path}")
-
-        form = AnswerForm(request.POST)
-        if form.is_valid():
-            answer = form.save(commit=False)
-            answer.question = question
-            answer.author = request.user
-            answer.save()
-
-            page_number = request.GET.get("page", 1)
-            return redirect(
-                f"{question.get_absolute_url()}?page={page_number}#answer-{answer.id}"
-            )
-    else:
-        form = AnswerForm()
+    page = paginate(answers, request, ITEMS_PER_PAGE)
+    form = AnswerForm()
 
     context = {"question": question, "answers": page, "form": form}
     context.update(get_common_context())
@@ -195,15 +198,19 @@ class SettingsView(LoginRequiredMixin, FormView):
             context["profile_form"] = ProfileForm(instance=user_profile)
         return context
 
+    @transaction.atomic
     def form_valid(self, form):
-        form.save()
-        user_profile, _ = Profile.objects.get_or_create(user=self.request.user)
+        user = form.save(commit=False)
+        user_profile, _ = Profile.objects.get_or_create(user=user)
         profile_form = ProfileForm(
             self.request.POST, self.request.FILES, instance=user_profile
         )
         if profile_form.is_valid():
+            user.save()
             profile_form.save()
-        return super().form_valid(form)
+            return super().form_valid(form)
+        else:
+            return self.form_invalid(form)
 
 
 def settings_view(request: HttpRequest):
