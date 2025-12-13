@@ -7,43 +7,55 @@
     <h2 class="mb-4">Sign Up</h2>
 
     <form class="d-flex flex-column gap-4 ms-3" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
         <div class="row">
-            <label for="email" class="col-sm-2 col-form-label">Email</label>
+            <label for="id_email" class="col-sm-2 col-form-label">Email</label>
             <div class="col-sm-4">
-                <input type="email" class="form-control" id="email" placeholder="Enter your email" required>
-                <div class="error-text">Email can't be empty</div>
+                {{ form.email }}
+                {% if form.email.errors %}
+                    <div class="error-text">Email can't be empty</div>
+                {% endif %}
             </div>
         </div>
 
         <div class="row">
-            <label for="nickname" class="col-sm-2 col-form-label">Nickname</label>
+            <label for="id_nickname" class="col-sm-2 col-form-label">Username</label>
             <div class="col-sm-4">
-                <input type="text" class="form-control" id="nickname" placeholder="Enter your nickname" required>
-                <div class="error-text">Nickname can't be empty</div>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <div class="error-text">Username can't be empty</div>
+                {% endif %}
             </div>
         </div>
 
         <div class="row">
-            <label for="password" class="col-sm-2 col-form-label">Password</label>
+            <label for="id_password1" class="col-sm-2 col-form-label">Password</label>
             <div class="col-sm-4">
-                <input type="password" class="form-control" id="password" placeholder="Enter your password" required>
-                <div class="error-text">Password can't be empty</div>
+                {{ form.password1 }}
+                {% if form.password1.errors %}
+                    <div class="error-text">{{ form.password1.errors }}</div>
+                {% endif %}
             </div>
         </div>
 
         <div class="row">
-            <label for="repeatPassword" class="col-sm-2 col-form-label">Repeat password</label>
+            <label for="id_password2" class="col-sm-2 col-form-label">Repeat password</label>
             <div class="col-sm-4">
-                <input type="password" class="form-control" id="repeatPassword" placeholder="Repeat your password" required>
-                <div class="error-text">Passwords don't match</div>
+                {{ form.password2 }}
+                {% if form.password2.errors %}
+                    <div class="error-text">{{ form.password2.errors }}</div>
+                {% endif %}
             </div>
         </div>
 
         <div class="row">
-            <label for="avatar" class="col-sm-2 col-form-label">Upload Avatar</label>
+            <label for="id_avatar" class="col-sm-2 col-form-label">Upload Avatar</label>
             <div class="col-sm-4">
                 <img src="/static/img/account-image.jpg" alt="Current Avatar" class="mb-2">
-                <input type="file" class="form-control" id="avatar">
+                {{ form.avatar }}
+                {% if form.avatar.errors %}
+                    <div class="error-text">{{ form.avatar.errors }}</div>
+                {% endif %}
             </div>
         </div>
 

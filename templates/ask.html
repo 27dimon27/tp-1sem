@@ -7,30 +7,34 @@
     <h2 class="mb-3">New Question</h2>
 
     <form method="post">
+        {% csrf_token %}
         <div class="mb-3 row">
-            <label for="questionTitle" class="col-sm-1 col-form-label">Title</label>
+            <label for="id_title" class="col-sm-1 col-form-label">Title</label>
             <div class="col-sm-8">
-                <input type="text" class="form-control" id="questionTitle" name="title"
-                    placeholder="Enter your question title" required>
-                <div class="error-text">Title can't be empty</div>
+                {{ form.title }}
+                {% if form.title.errors %}
+                    <div class="error-text">{{ form.title.errors }}</div>
+                {% endif %}
             </div>
         </div>
 
         <div class="mb-3 row">
-            <label for="questionText" class="col-sm-1 col-form-label">Text</label>
+            <label for="id_text" class="col-sm-1 col-form-label">Text</label>
             <div class="col-sm-8">
-                <textarea class="form-control" id="questionText" name="text" rows="8"
-                    placeholder="Describe your question in detail" required></textarea>
-                <div class="error-text">Question text can't be empty</div>
+                {{ form.text }}
+                {% if form.text.errors %}
+                    <div class="error-text">{{ form.text.errors }}</div>
+                {% endif %}
             </div>
         </div>
 
         <div class="mb-3 row">
-            <label for="questionTags" class="col-sm-1 col-form-label">Tags</label>
+            <label for="id_tags" class="col-sm-1 col-form-label">Tags</label>
             <div class="col-sm-8">
-                <input type="text" class="form-control" id="questionTags" name="tags"
-                    placeholder="Enter tags separated by commas" required>
-                <div class="error-text">At least one tag is required</div>
+                {{ form.tags }}
+                {% if form.tags.errors %}
+                    <div class="error-text">{{ form.tags.errors }}</div>
+                {% endif %}
             </div>
         </div>
 
