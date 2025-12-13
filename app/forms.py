@@ -255,12 +255,6 @@ class ProfileForm(forms.ModelForm):
                     f"File size must be less than {MAX_AVATAR_SIZE // (1024 * 1024)}MB"
                 )
 
-            ext = os.path.splitext(avatar.name)[1][1:].lower()
-            if ext not in ALLOWED_IMAGE_EXTENSIONS:
-                raise ValidationError(
-                    f"Allowed file extensions: {', '.join(ALLOWED_IMAGE_EXTENSIONS)}"
-                )
-
         return avatar
 
     class Meta:
