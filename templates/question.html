@@ -1,26 +1,31 @@
 {% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
 
 {% block title %}{{ question.title }} - AskNagdasev{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="/static/css/question.css">
+<link rel="stylesheet" href="{% static 'css/question.css' %}">
+<link rel="stylesheet" href="{% static 'css/likes.css' %}">
 {% endblock %}
 
 {% block content %}
 <div class="px-3">
-    <div class="question d-flex gap-3 mb-4">
+    <div class="question d-flex gap-3 mb-4" data-question-id="{{ question.id }}">
         <div class="question-avatar-n-rating d-flex flex-column align-items-center">
             {% if question.author.profile.avatar %}
                 <img src="{{ question.author.profile.avatar.url }}" alt="User Avatar" class="question-avatar mb-2">
             {% else %}
-                <img src="/static/img/question.png" alt="User Avatar" class="question-avatar mb-2">
+                <img src="{% static 'img/question.png' %}" alt="User Avatar" class="question-avatar mb-2">
             {% endif %}
-            <div class="rating">
+            <div class="like-buttons">
+                <button class="like-btn {% if user_votes.question == 1 %}active{% endif %}">
+                    ↑
+                </button>
                 <div class="rating-value">{{ question.rating }}</div>
-                <div class="rating-buttons">
-                    <button class="rating-up-btn">↑</button>
-                    <button class="rating-down-btn">↓</button>
-                </div>
+                <button class="dislike-btn {% if user_votes.question == -1 %}active{% endif %}">
+                    ↓
+                </button>
             </div>
         </div>
         <div class="question-answers-n-tags flex-grow-1">
@@ -30,7 +35,7 @@
                 <p class="mb-0">Tags:</p>
                 {% if question.tags.all %}
                     {% for tag in question.tags.all %}
-                        <a href="{% url 'app:tag' tag %}" class="text-decoration-none">{{ tag.name }}</a>
+                        <a href="{% url 'app:tag' tag.name %}" class="text-decoration-none">{{ tag.name }}</a>
                     {% endfor %}
                 {% else %}
                     <span class="text-muted">No tags</span>
@@ -46,25 +51,31 @@
 
         <div class="d-flex flex-column gap-3">
             {% for answer in answers %}
-            <div class="answer d-flex gap-3" id="answer-{{ answer.id }}">
+            <div class="answer d-flex gap-3 {% if answer.is_correct %}correct{% endif %}"
+                 id="answer-{{ answer.id }}" data-answer-id="{{ answer.id }}">
                 <div class="answer-avatar-n-rating d-flex flex-column align-items-center">
                     {% if answer.author.profile.avatar %}
                         <img src="{{ answer.author.profile.avatar.url }}" alt="User Avatar" class="answer-avatar mb-2">
                     {% else %}
-                        <img src="/static/img/answer.png" alt="User Avatar" class="answer-avatar mb-2">
+                        <img src="{% static 'img/answer.png' %}" alt="User Avatar" class="answer-avatar mb-2">
                     {% endif %}
-                    <div class="rating">
+                    <div class="like-buttons">
+                        <button class="like-btn {% if user_votes.answers|get_item:answer.id == 1 %}active{% endif %}">
+                            ↑
+                        </button>
                         <div class="rating-value">{{ answer.rating }}</div>
-                        <div class="rating-buttons">
-                            <button class="rating-up-btn">↑</button>
-                            <button class="rating-down-btn">↓</button>
-                        </div>
+                        <button class="dislike-btn {% if user_votes.answers|get_item:answer.id == -1 %}active{% endif %}">
+                            ↓
+                        </button>
                     </div>
                 </div>
                 <div class="answer-answers-n-tags flex-grow-1">
                     <p class="mt-2">{{ answer.text }}</p>
                     <div class="correct-checkbox">
-                        <input type="checkbox" id="correct{{ answer.id }}" {% if answer.is_correct %}checked{% endif %}>
+                        <input type="checkbox" 
+                               id="correct{{ answer.id }}" 
+                               {% if answer.is_correct %}checked{% endif %}
+                               {% if not is_question_author %}disabled{% endif %}>
                         <label for="correct{{ answer.id }}">Correct!</label>
                     </div>
                 </div>
@@ -77,6 +88,7 @@
 
     <hr>
 
+    {% if user.is_authenticated %}
     <form class="mb-3" method="post" action="{% url 'app:create_answer' question.id %}">
         {% csrf_token %}
         <h3 class="mb-3">Enter your answer</h3>
@@ -86,5 +98,15 @@
         {% endif %}
         <button type="submit" class="btn answer-btn mt-3">Answer!</button>
     </form>
+    {% else %}
+    <div class="alert alert-info">
+        Please <a href="{% url 'app:login' %}?next={{ request.path }}">log in</a> to post an answer.
+    </div>
+    {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="{% static 'js/ajax_likes.js' %}"></script>
 {% endblock %}

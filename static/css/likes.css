@@ -1,0 +1,121 @@
+.like-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    min-width: 50px;
+}
+
+.like-btn,
+.dislike-btn {
+    width: 35px;
+    height: 35px;
+    border: 2px solid #ddd;
+    background: white;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    color: #666;
+}
+
+.like-btn:hover,
+.dislike-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.like-btn:hover {
+    border-color: #28a745;
+    color: #28a745;
+}
+
+.dislike-btn:hover {
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+.like-btn.active {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: white;
+}
+
+.dislike-btn.active {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+.rating-value {
+    font-weight: bold;
+    font-size: 18px;
+    min-width: 30px;
+    text-align: center;
+    padding: 5px 0;
+}
+
+.correct-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.correct-checkbox input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.correct-checkbox label {
+    cursor: pointer;
+    user-select: none;
+    font-weight: bold;
+    transition: color 0.2s ease;
+}
+
+.correct-checkbox input[type="checkbox"]:not(:checked) + label {
+    color: #6c757d;
+}
+
+.correct-checkbox input[type="checkbox"]:checked + label {
+    color: #28a745;
+}
+
+.correct-checkbox input[type="checkbox"]:checked {
+    accent-color: #28a745;
+}
+
+.correct-checkbox input[type="checkbox"]:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.correct-checkbox input[type="checkbox"]:disabled + label {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.answer.correct {
+    border-left: 4px solid #28a745;
+    padding-left: 15px;
+    background-color: rgba(40, 167, 69, 0.05);
+    border-radius: 4px;
+}
+
+.answer.correct .correct-checkbox label {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.answer .correct-checkbox input[type="checkbox"]:checked + label {
+    color: #28a745;
+}
+
+.answer .correct-checkbox input[type="checkbox"]:not(:checked) + label {
+    color: #6c757d;
+}

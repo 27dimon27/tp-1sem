@@ -9,6 +9,9 @@ from django.http import HttpRequest
 from django.db import transaction
 from .models import Question, Tag, Profile
 from .forms import LoginForm, SignupForm, AskForm, AnswerForm, SettingsForm, ProfileForm
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from .models import Answer, QuestionLike, AnswerLike
 
 ITEMS_PER_PAGE = 5
 
@@ -40,7 +43,15 @@ def paginate(objects_list, request, per_page=10):
 def index(request: HttpRequest):
     questions = Question.objects.new_questions()
     page = paginate(questions, request, ITEMS_PER_PAGE)
-    context = {"questions": page, "page_title": "New Questions"}
+
+    questions_ids = list(page.object_list.values_list("id", flat=True))
+    user_votes = get_user_votes(request.user, questions_ids=questions_ids)
+
+    context = {
+        "questions": page,
+        "page_title": "New Questions",
+        "user_votes": user_votes,
+    }
     context.update(get_common_context())
     return render(request, "index.html", context)
 
@@ -48,7 +59,15 @@ def index(request: HttpRequest):
 def hot_questions(request: HttpRequest):
     questions = Question.objects.best_questions()
     page = paginate(questions, request, ITEMS_PER_PAGE)
-    context = {"questions": page, "page_title": "Hot Questions"}
+
+    questions_ids = list(page.object_list.values_list("id", flat=True))
+    user_votes = get_user_votes(request.user, questions_ids=questions_ids)
+
+    context = {
+        "questions": page,
+        "page_title": "Hot Questions",
+        "user_votes": user_votes,
+    }
     context.update(get_common_context())
     return render(request, "index.html", context)
 
@@ -62,11 +81,16 @@ def tag_questions(request: HttpRequest, tag_name):
         .order_by("-created_date")
     )
     page = paginate(questions, request, ITEMS_PER_PAGE)
+
+    questions_ids = list(page.object_list.values_list("id", flat=True))
+    user_votes = get_user_votes(request.user, questions_ids=questions_ids)
+
     context = {
         "questions": page,
         "page_title": f"Tag: {tag_name}",
         "is_tag_page": True,
         "current_tag": tag_name,
+        "user_votes": user_votes,
     }
     context.update(get_common_context())
     return render(request, "index.html", context)
@@ -103,7 +127,19 @@ def question_detail(request: HttpRequest, question_id):
     page = paginate(answers, request, ITEMS_PER_PAGE)
     form = AnswerForm()
 
-    context = {"question": question, "answers": page, "form": form}
+    answers_ids = list(answers.values_list("id", flat=True))
+
+    user_votes = get_user_votes(
+        request.user, question_id=question_id, answers_ids=answers_ids
+    )
+
+    context = {
+        "question": question,
+        "answers": page,
+        "form": form,
+        "user_votes": user_votes,
+        "is_question_author": request.user == question.author,
+    }
     context.update(get_common_context())
     return render(request, "question.html", context)
 
@@ -216,3 +252,158 @@ class SettingsView(LoginRequiredMixin, FormView):
 def settings_view(request: HttpRequest):
     view = SettingsView.as_view()
     return view(request)
+
+
+@require_POST
+@login_required
+def ajax_like_question(request):
+    try:
+        question_id = request.POST.get("question_id")
+        value = int(request.POST.get("value"))
+
+        if value not in [1, -1]:
+            return JsonResponse(
+                {"success": False, "error": "Invalid value"}, status=400
+            )
+
+        question = get_object_or_404(Question, id=question_id)
+
+        existing_like = QuestionLike.objects.filter(
+            user=request.user, question=question
+        ).first()
+
+        if existing_like:
+            if existing_like.value == value:
+                existing_like.delete()
+                action = "removed"
+            else:
+                existing_like.value = value
+                existing_like.save()
+                action = "changed"
+        else:
+            QuestionLike.objects.create(
+                user=request.user, question=question, value=value
+            )
+            action = "added"
+
+        question.update_rating()
+
+        return JsonResponse(
+            {
+                "success": True,
+                "new_rating": question.rating,
+                "action": action,
+                "current_value": value if action != "removed" else 0,
+            }
+        )
+
+    except (ValueError, TypeError):
+        return JsonResponse({"success": False, "error": "Invalid data"}, status=400)
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+@require_POST
+@login_required
+def ajax_like_answer(request):
+    try:
+        answer_id = request.POST.get("answer_id")
+        value = int(request.POST.get("value"))
+
+        if value not in [1, -1]:
+            return JsonResponse(
+                {"success": False, "error": "Invalid value"}, status=400
+            )
+
+        answer = get_object_or_404(Answer, id=answer_id)
+
+        existing_like = AnswerLike.objects.filter(
+            user=request.user, answer=answer
+        ).first()
+
+        if existing_like:
+            if existing_like.value == value:
+                existing_like.delete()
+                action = "removed"
+            else:
+                existing_like.value = value
+                existing_like.save()
+                action = "changed"
+        else:
+            AnswerLike.objects.create(user=request.user, answer=answer, value=value)
+            action = "added"
+
+        answer.update_rating()
+
+        return JsonResponse(
+            {
+                "success": True,
+                "new_rating": answer.rating,
+                "action": action,
+                "current_value": value if action != "removed" else 0,
+            }
+        )
+
+    except (ValueError, TypeError):
+        return JsonResponse({"success": False, "error": "Invalid data"}, status=400)
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+@require_POST
+@login_required
+def ajax_mark_correct(request):
+    try:
+        answer_id = request.POST.get("answer_id")
+        is_correct = request.POST.get("is_correct") == "true"
+
+        answer = get_object_or_404(Answer, id=answer_id)
+        question = answer.question
+
+        if request.user != question.author:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Only question author can mark answers as correct",
+                },
+                status=403,
+            )
+
+        if is_correct:
+            Answer.objects.filter(question=question).update(is_correct=False)
+
+        answer.is_correct = is_correct
+        answer.save()
+
+        return JsonResponse({"success": True})
+
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+def get_user_votes(user, question_id=None, questions_ids=None, answers_ids=None):
+    votes = {"question": None, "answers": {}, "questions": {}}
+
+    if user.is_authenticated:
+        if question_id:
+            question_like = QuestionLike.objects.filter(
+                user=user, question_id=question_id
+            ).first()
+            if question_like:
+                votes["question"] = question_like.value
+
+        if questions_ids:
+            question_likes = QuestionLike.objects.filter(
+                user=user, question_id__in=questions_ids
+            )
+            for like in question_likes:
+                votes["questions"][like.question_id] = like.value
+
+        if answers_ids:
+            answer_likes = AnswerLike.objects.filter(
+                user=user, answer_id__in=answers_ids
+            )
+            for like in answer_likes:
+                votes["answers"][like.answer_id] = like.value
+
+    return votes

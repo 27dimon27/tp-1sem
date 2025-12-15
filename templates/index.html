@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load custom_filters %}
 
 {% block title %}
     {% if is_tag_page %}
@@ -7,6 +8,10 @@
     {% else %}
         {{ page_title }} - AskNagdasev
     {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/likes.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -26,19 +31,21 @@
 
     <div class="d-flex flex-column gap-3">
         {% for question in questions %}
-        <div class="question d-flex gap-3">
+        <div class="question d-flex gap-3" data-question-id="{{ question.id }}">
             <div class="question-avatar-n-rating d-flex flex-column align-items-center">
                 {% if question.author.profile.avatar %}
                     <img src="{{ question.author.profile.avatar.url }}" alt="User Avatar" class="question-avatar mb-2">
                 {% else %}
                     <img src="{% static 'img/question.png' %}" alt="User Avatar" class="question-avatar mb-2">
                 {% endif %}
-                <div class="rating">
+                <div class="like-buttons">
+                    <button class="like-btn {% if user_votes.questions|get_item:question.id == 1 %}active{% endif %}">
+                        ↑
+                    </button>
                     <div class="rating-value">{{ question.rating }}</div>
-                    <div class="rating-buttons">
-                        <button class="rating-up-btn">↑</button>
-                        <button class="rating-down-btn">↓</button>
-                    </div>
+                    <button class="dislike-btn {% if user_votes.questions|get_item:question.id == -1 %}active{% endif %}">
+                        ↓
+                    </button>
                 </div>
             </div>
             <div class="question-answers-n-tags flex-grow-1">
@@ -64,4 +71,8 @@
 
     {% include 'pagination.html' with page_obj=questions %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/ajax_likes.js' %}"></script>
 {% endblock %}

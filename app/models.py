@@ -25,10 +25,10 @@ def validate_like_value(value):
 class ProfileManager(models.Manager):
     def best_members(self, limit=10):
         return (
-            self.select_related('user')
-            .annotate(questions_count=Count('user__question'))
+            self.select_related("user")
+            .annotate(questions_count=Count("user__question"))
             .filter(questions_count__gt=0)
-            .order_by('-questions_count')[:limit]
+            .order_by("-questions_count")[:limit]
         )
 
 
@@ -48,6 +48,15 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"Данные профиля пользователя #{self.user_id}"
+
+    def get_avatar_url(self):
+        if self.avatar and hasattr(self.avatar, "url"):
+            import os
+            from django.conf import settings
+
+            if os.path.exists(os.path.join(settings.MEDIA_ROOT, self.avatar.name)):
+                return self.avatar.url
+        return None
 
 
 class TagManager(models.Manager):
