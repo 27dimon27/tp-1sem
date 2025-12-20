@@ -41,7 +41,6 @@
     }
 
     function handleLike($btn, entityType, entityId) {
-        // Проверяем, не свои ли это вопрос/ответ
         const isOwnContent = $btn.data('own') === 'true' || $btn.hasClass('disabled-own');
         if (isOwnContent) {
             return false;
@@ -63,7 +62,6 @@
         const $otherBtn = isLikeBtn ? $container.find('.dislike-btn') : $container.find('.like-btn');
         const $ratingValue = $container.find('.rating-value');
 
-        // Проверяем, не свои ли это вопрос/ответ для другой кнопки
         const isOtherOwnContent = $otherBtn.data('own') === 'true' || $otherBtn.hasClass('disabled-own');
         if (isOtherOwnContent) {
             return false;
@@ -128,7 +126,6 @@
                         $container.find('.dislike-btn').removeClass('active');
                     }
                 } else {
-                    // Восстанавливаем предыдущее состояние при ошибке
                     $ratingValue.text(oldRating);
                     if (wasActive) {
                         $btn.addClass('active');
@@ -142,7 +139,6 @@
                     }
                     
                     if (response.error && response.error.includes('cannot like your own')) {
-                        // Отключаем кнопки для своих вопросов/ответов
                         $btn.addClass('disabled-own');
                         $otherBtn.addClass('disabled-own');
                         $btn.css('opacity', '0.5');
@@ -159,7 +155,6 @@
                 }
             },
             function (xhr) {
-                // Восстанавливаем предыдущее состояние при ошибке сети
                 $ratingValue.text(oldRating);
                 if (wasActive) {
                     $btn.addClass('active');
@@ -175,7 +170,6 @@
                 if (xhr.status === 403) {
                     if (xhr.responseJSON && xhr.responseJSON.error && 
                         xhr.responseJSON.error.includes('cannot like your own')) {
-                        // Отключаем кнопки для своих вопросов/ответов
                         $btn.addClass('disabled-own');
                         $otherBtn.addClass('disabled-own');
                         $btn.css('opacity', '0.5');
@@ -197,7 +191,6 @@
             }
         ).always(function() {
             activeRequest = false;
-            // Разблокируем кнопки, только если они не отключены для своих вопросов
             if (!$btn.hasClass('disabled-own')) {
                 $btn.prop('disabled', false);
                 $otherBtn.prop('disabled', false);
@@ -209,7 +202,6 @@
         return true;
     }
 
-    // Обработчики для вопросов на главной странице
     $(document).on('click', '.question .like-btn:not(.disabled-own), .question .dislike-btn:not(.disabled-own)', function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -223,7 +215,6 @@
         handleLike($btn, 'question', questionId);
     });
 
-    // Обработчики для вопросов на странице вопроса
     $(document).on('click', '.question[data-question-id] .like-btn:not(.disabled-own), .question[data-question-id] .dislike-btn:not(.disabled-own)', function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -237,7 +228,6 @@
         handleLike($btn, 'question', questionId);
     });
 
-    // Обработчики для ответов
     $(document).on('click', '.answer .like-btn:not(.disabled-own), .answer .dislike-btn:not(.disabled-own)', function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -315,7 +305,6 @@
     });
 
     $(document).ready(function () {
-        // Инициализация тултипов для неактивных кнопок
         $('.like-btn.disabled-own, .dislike-btn.disabled-own').each(function() {
             $(this).attr('title', 'You cannot vote on your own content');
             $(this).css({
@@ -346,7 +335,6 @@
             },
             function () {
                 const $btn = $(this);
-                // Не удаляем заголовок, если это предупреждение о своих вопросах
                 if (!$btn.hasClass('disabled-own')) {
                     $btn.removeAttr('title');
                 }
@@ -366,7 +354,6 @@
             }
         );
         
-        // Добавляем CSS для неактивных кнопок
         if (!$('style[data-own-buttons]').length) {
             const style = document.createElement('style');
             style.setAttribute('data-own-buttons', 'true');
