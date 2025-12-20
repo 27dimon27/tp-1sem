@@ -39,11 +39,17 @@
                     <img src="{% static 'img/question.png' %}" alt="User Avatar" class="question-avatar mb-2">
                 {% endif %}
                 <div class="like-buttons">
-                    <button class="like-btn {% if user_votes.questions|get_item:question.id == 1 %}active{% endif %}">
+                    <button class="like-btn {% if user_votes.questions|get_item:question.id == 1 %}active{% endif %} 
+                            {% if user.id == question.author.id %}disabled-own{% endif %}
+                            {% if user.id == question.author.id %}style='opacity: 0.5; cursor: not-allowed;'{% endif %}"
+                            data-own="{% if user.id == question.author.id %}true{% else %}false{% endif %}">
                         ↑
                     </button>
                     <div class="rating-value">{{ question.rating }}</div>
-                    <button class="dislike-btn {% if user_votes.questions|get_item:question.id == -1 %}active{% endif %}">
+                    <button class="dislike-btn {% if user_votes.questions|get_item:question.id == -1 %}active{% endif %} 
+                            {% if user.id == question.author.id %}disabled-own{% endif %}
+                            {% if user.id == question.author.id %}style='opacity: 0.5; cursor: not-allowed;'{% endif %}"
+                            data-own="{% if user.id == question.author.id %}true{% else %}false{% endif %}">
                         ↓
                     </button>
                 </div>

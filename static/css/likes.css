@@ -119,3 +119,36 @@
 .answer .correct-checkbox input[type="checkbox"]:not(:checked) + label {
     color: #6c757d;
 }
+
+.like-btn:disabled, 
+.dislike-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed !important;
+}
+
+.like-btn:disabled:hover, 
+.dislike-btn:disabled:hover {
+    background-color: inherit !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.like-btn.disabled-own,
+.dislike-btn.disabled-own {
+    opacity: 0.5;
+    cursor: not-allowed !important;
+    pointer-events: none;
+}
+
+.like-btn.disabled-own:hover,
+.dislike-btn.disabled-own:hover {
+    background-color: inherit !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.like-btn:disabled:not(.disabled-own), 
+.dislike-btn:disabled:not(.disabled-own) {
+    opacity: 0.7;
+    cursor: wait !important;
+}

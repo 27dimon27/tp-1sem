@@ -8,10 +8,21 @@ from django.urls import reverse_lazy
 from django.http import HttpRequest
 from django.db import transaction
 from .models import Question, Tag, Profile
-from .forms import LoginForm, SignupForm, AskForm, AnswerForm, SettingsForm, ProfileForm
+from .forms import (
+    MarkCorrectForm,
+    AnswerLikeForm,
+    LoginForm,
+    QuestionLikeForm,
+    SignupForm,
+    AskForm,
+    AnswerForm,
+    SettingsForm,
+    ProfileForm,
+)
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from .models import Answer, QuestionLike, AnswerLike
+from django.db.models import Case, When, IntegerField
 
 ITEMS_PER_PAGE = 5
 
@@ -256,17 +267,23 @@ def settings_view(request: HttpRequest):
 
 @require_POST
 @login_required
+@transaction.atomic
 def ajax_like_question(request):
     try:
-        question_id = request.POST.get("question_id")
-        value = int(request.POST.get("value"))
+        form = QuestionLikeForm(request.POST)
+        if not form.is_valid():
+            return JsonResponse({"success": False, "error": form.errors}, status=400)
 
-        if value not in [1, -1]:
-            return JsonResponse(
-                {"success": False, "error": "Invalid value"}, status=400
-            )
+        question_id = form.cleaned_data["question_id"]
+        value = form.cleaned_data["value"]
 
         question = get_object_or_404(Question, id=question_id)
+
+        if request.user == question.author:
+            return JsonResponse(
+                {"success": False, "error": "You cannot like your own question"},
+                status=403,
+            )
 
         existing_like = QuestionLike.objects.filter(
             user=request.user, question=question
@@ -281,7 +298,7 @@ def ajax_like_question(request):
                 existing_like.save()
                 action = "changed"
         else:
-            QuestionLike.objects.create(
+            QuestionLike.objects.get_or_create(
                 user=request.user, question=question, value=value
             )
             action = "added"
@@ -297,25 +314,29 @@ def ajax_like_question(request):
             }
         )
 
-    except (ValueError, TypeError):
-        return JsonResponse({"success": False, "error": "Invalid data"}, status=400)
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 
 @require_POST
 @login_required
+@transaction.atomic
 def ajax_like_answer(request):
     try:
-        answer_id = request.POST.get("answer_id")
-        value = int(request.POST.get("value"))
+        form = AnswerLikeForm(request.POST)
+        if not form.is_valid():
+            return JsonResponse({"success": False, "error": form.errors}, status=400)
 
-        if value not in [1, -1]:
-            return JsonResponse(
-                {"success": False, "error": "Invalid value"}, status=400
-            )
+        answer_id = form.cleaned_data["answer_id"]
+        value = form.cleaned_data["value"]
 
         answer = get_object_or_404(Answer, id=answer_id)
+
+        if request.user == answer.author:
+            return JsonResponse(
+                {"success": False, "error": "You cannot like your own answer"},
+                status=403,
+            )
 
         existing_like = AnswerLike.objects.filter(
             user=request.user, answer=answer
@@ -330,7 +351,9 @@ def ajax_like_answer(request):
                 existing_like.save()
                 action = "changed"
         else:
-            AnswerLike.objects.create(user=request.user, answer=answer, value=value)
+            AnswerLike.objects.get_or_create(
+                user=request.user, answer=answer, value=value
+            )
             action = "added"
 
         answer.update_rating()
@@ -344,18 +367,21 @@ def ajax_like_answer(request):
             }
         )
 
-    except (ValueError, TypeError):
-        return JsonResponse({"success": False, "error": "Invalid data"}, status=400)
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 
 @require_POST
 @login_required
+@transaction.atomic
 def ajax_mark_correct(request):
     try:
-        answer_id = request.POST.get("answer_id")
-        is_correct = request.POST.get("is_correct") == "true"
+        form = MarkCorrectForm(request.POST)
+        if not form.is_valid():
+            return JsonResponse({"success": False, "error": form.errors}, status=400)
+
+        answer_id = form.cleaned_data["answer_id"]
+        is_correct = form.cleaned_data["is_correct"]
 
         answer = get_object_or_404(Answer, id=answer_id)
         question = answer.question
@@ -386,24 +412,31 @@ def get_user_votes(user, question_id=None, questions_ids=None, answers_ids=None)
 
     if user.is_authenticated:
         if question_id:
-            question_like = QuestionLike.objects.filter(
-                user=user, question_id=question_id
-            ).first()
+            question_like = (
+                QuestionLike.objects.filter(user=user, question_id=question_id)
+                .annotate(
+                    value_int=Case(
+                        When(value=1, then=1),
+                        When(value=-1, then=-1),
+                        default=None,
+                        output_field=IntegerField(),
+                    )
+                )
+                .first()
+            )
             if question_like:
                 votes["question"] = question_like.value
 
         if questions_ids:
             question_likes = QuestionLike.objects.filter(
                 user=user, question_id__in=questions_ids
-            )
-            for like in question_likes:
-                votes["questions"][like.question_id] = like.value
+            ).values_list("question_id", "value")
+            votes["questions"] = dict(question_likes)
 
         if answers_ids:
             answer_likes = AnswerLike.objects.filter(
                 user=user, answer_id__in=answers_ids
-            )
-            for like in answer_likes:
-                votes["answers"][like.answer_id] = like.value
+            ).values_list("answer_id", "value")
+            votes["answers"] = dict(answer_likes)
 
     return votes

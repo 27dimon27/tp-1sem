@@ -3,13 +3,27 @@ from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.core.exceptions import ValidationError
-from django.core.validators import FileExtensionValidator
+from django.core.validators import (
+    FileExtensionValidator,
+    MinValueValidator,
+    MaxValueValidator,
+)
 from django.db import transaction
 from .models import Profile, Question, Answer, Tag
 
 MAX_TAGS_COUNT = 5
 MAX_AVATAR_SIZE = 2 * 1024 * 1024
 ALLOWED_IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "gif"]
+
+
+class LikeForm(forms.Form):
+    value = forms.IntegerField(validators=[MinValueValidator(-1), MaxValueValidator(1)])
+
+    def clean_value(self):
+        value = self.cleaned_data.get("value")
+        if value not in [1, -1]:
+            raise ValidationError("Value must be 1 or -1")
+        return value
 
 
 class LoginForm(AuthenticationForm):
@@ -263,3 +277,16 @@ class ProfileForm(forms.ModelForm):
         widgets = {
             "avatar": forms.FileInput(attrs={"class": "form-control"}),
         }
+
+
+class QuestionLikeForm(LikeForm):
+    question_id = forms.IntegerField(min_value=1)
+
+
+class AnswerLikeForm(LikeForm):
+    answer_id = forms.IntegerField(min_value=1)
+
+
+class MarkCorrectForm(forms.Form):
+    answer_id = forms.IntegerField(min_value=1)
+    is_correct = forms.BooleanField(required=False)

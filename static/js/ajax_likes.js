@@ -1,4 +1,6 @@
 (function () {
+    let activeRequest = false;
+
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
@@ -14,10 +16,10 @@
         return cookieValue;
     }
 
-    function sendAjaxRequest(url, data, successCallback, errorCallback) {
+    function sendAjaxRequest(url, data, successCallback, errorCallback, options = {}) {
         const csrftoken = getCookie('csrftoken');
 
-        $.ajax({
+        return $.ajax({
             url: url,
             type: 'POST',
             data: data,
@@ -26,10 +28,10 @@
             },
             dataType: 'json',
             success: successCallback,
-            error: function (xhr, status, error) {
-                console.error('AJAX Error:', error);
+            error: function (xhr) {
                 if (errorCallback) errorCallback(xhr);
-            }
+            },
+            ...options
         });
     }
 
@@ -38,8 +40,179 @@
         return $navbar.text().indexOf('Log in') === -1 && $navbar.text().indexOf('Sign up') === -1;
     }
 
-    $(document).on('click', '.question .like-btn, .question .dislike-btn', function (e) {
+    function handleLike($btn, entityType, entityId) {
+        // Проверяем, не свои ли это вопрос/ответ
+        const isOwnContent = $btn.data('own') === 'true' || $btn.hasClass('disabled-own');
+        if (isOwnContent) {
+            return false;
+        }
+
+        if (activeRequest) {
+            return false;
+        }
+
+        if (!checkAuth()) {
+            const loginUrl = '/login/?next=' + encodeURIComponent(window.location.pathname);
+            window.location.href = loginUrl;
+            return false;
+        }
+
+        const isLikeBtn = $btn.hasClass('like-btn');
+        const value = isLikeBtn ? 1 : -1;
+        const $container = $btn.closest('.question, .answer');
+        const $otherBtn = isLikeBtn ? $container.find('.dislike-btn') : $container.find('.like-btn');
+        const $ratingValue = $container.find('.rating-value');
+
+        // Проверяем, не свои ли это вопрос/ответ для другой кнопки
+        const isOtherOwnContent = $otherBtn.data('own') === 'true' || $otherBtn.hasClass('disabled-own');
+        if (isOtherOwnContent) {
+            return false;
+        }
+
+        const oldRating = parseInt($ratingValue.text()) || 0;
+        const wasActive = $btn.hasClass('active');
+        const otherWasActive = $otherBtn.hasClass('active');
+
+        let newRating = oldRating;
+        
+        if (wasActive) {
+            newRating -= value;
+        } else {
+            if (otherWasActive) {
+                newRating = oldRating + (value * 2);
+            } else {
+                newRating = oldRating + value;
+            }
+        }
+        
+        $ratingValue.text(newRating);
+        if (wasActive) {
+            $btn.removeClass('active');
+        } else {
+            $btn.addClass('active');
+            $otherBtn.removeClass('active');
+        }
+
+        activeRequest = true;
+        $btn.prop('disabled', true);
+        $otherBtn.prop('disabled', true);
+        $btn.css('cursor', 'wait');
+        $otherBtn.css('cursor', 'wait');
+
+        $btn.css('transform', 'scale(0.9)');
+        setTimeout(() => {
+            $btn.css('transform', 'scale(1)');
+        }, 150);
+
+        const url = entityType === 'question' ? '/ajax/like/question/' : '/ajax/like/answer/';
+        const dataKey = entityType === 'question' ? 'question_id' : 'answer_id';
+
+        sendAjaxRequest(
+            url,
+            {
+                [dataKey]: entityId,
+                value: value
+            },
+            function (response) {
+                if (response.success) {
+                    $ratingValue.text(response.new_rating);
+                    
+                    if (response.current_value === 1) {
+                        $container.find('.like-btn').addClass('active');
+                        $container.find('.dislike-btn').removeClass('active');
+                    } else if (response.current_value === -1) {
+                        $container.find('.like-btn').removeClass('active');
+                        $container.find('.dislike-btn').addClass('active');
+                    } else {
+                        $container.find('.like-btn').removeClass('active');
+                        $container.find('.dislike-btn').removeClass('active');
+                    }
+                } else {
+                    // Восстанавливаем предыдущее состояние при ошибке
+                    $ratingValue.text(oldRating);
+                    if (wasActive) {
+                        $btn.addClass('active');
+                    } else {
+                        $btn.removeClass('active');
+                    }
+                    if (otherWasActive) {
+                        $otherBtn.addClass('active');
+                    } else {
+                        $otherBtn.removeClass('active');
+                    }
+                    
+                    if (response.error && response.error.includes('cannot like your own')) {
+                        // Отключаем кнопки для своих вопросов/ответов
+                        $btn.addClass('disabled-own');
+                        $otherBtn.addClass('disabled-own');
+                        $btn.css('opacity', '0.5');
+                        $otherBtn.css('opacity', '0.5');
+                        $btn.css('cursor', 'not-allowed');
+                        $otherBtn.css('cursor', 'not-allowed');
+                        $btn.data('own', 'true');
+                        $otherBtn.data('own', 'true');
+                        $btn.prop('disabled', true);
+                        $otherBtn.prop('disabled', true);
+                    } else if (response.error) {
+                        alert('Error: ' + response.error);
+                    }
+                }
+            },
+            function (xhr) {
+                // Восстанавливаем предыдущее состояние при ошибке сети
+                $ratingValue.text(oldRating);
+                if (wasActive) {
+                    $btn.addClass('active');
+                } else {
+                    $btn.removeClass('active');
+                }
+                if (otherWasActive) {
+                    $otherBtn.addClass('active');
+                } else {
+                    $otherBtn.removeClass('active');
+                }
+                
+                if (xhr.status === 403) {
+                    if (xhr.responseJSON && xhr.responseJSON.error && 
+                        xhr.responseJSON.error.includes('cannot like your own')) {
+                        // Отключаем кнопки для своих вопросов/ответов
+                        $btn.addClass('disabled-own');
+                        $otherBtn.addClass('disabled-own');
+                        $btn.css('opacity', '0.5');
+                        $otherBtn.css('opacity', '0.5');
+                        $btn.css('cursor', 'not-allowed');
+                        $otherBtn.css('cursor', 'not-allowed');
+                        $btn.data('own', 'true');
+                        $otherBtn.data('own', 'true');
+                        $btn.prop('disabled', true);
+                        $otherBtn.prop('disabled', true);
+                    } else {
+                        window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
+                    }
+                } else if (xhr.status === 400 && xhr.responseJSON && xhr.responseJSON.error) {
+                    alert('Error: ' + xhr.responseJSON.error);
+                } else {
+                    alert('Network error. Please try again.');
+                }
+            }
+        ).always(function() {
+            activeRequest = false;
+            // Разблокируем кнопки, только если они не отключены для своих вопросов
+            if (!$btn.hasClass('disabled-own')) {
+                $btn.prop('disabled', false);
+                $otherBtn.prop('disabled', false);
+                $btn.css('cursor', '');
+                $otherBtn.css('cursor', '');
+            }
+        });
+
+        return true;
+    }
+
+    // Обработчики для вопросов на главной странице
+    $(document).on('click', '.question .like-btn:not(.disabled-own), .question .dislike-btn:not(.disabled-own)', function (e) {
         e.preventDefault();
+        e.stopPropagation();
 
         const $btn = $(this);
         const $container = $btn.closest('.question');
@@ -47,53 +220,13 @@
 
         if (!questionId) return;
 
-        if (!checkAuth()) {
-            const loginUrl = '/login/?next=' + encodeURIComponent(window.location.pathname);
-            window.location.href = loginUrl;
-            return;
-        }
-
-        const isLikeBtn = $btn.hasClass('like-btn');
-        const value = isLikeBtn ? 1 : -1;
-        const $otherBtn = isLikeBtn ? $container.find('.dislike-btn') : $container.find('.like-btn');
-        const $ratingValue = $container.find('.rating-value');
-
-        $btn.css('transform', 'scale(0.9)');
-        setTimeout(() => {
-            $btn.css('transform', 'scale(1)');
-        }, 150);
-
-        sendAjaxRequest(
-            '/ajax/like/question/',
-            {
-                question_id: questionId,
-                value: value
-            },
-            function (response) {
-                if (response.success) {
-                    $ratingValue.text(response.new_rating);
-
-                    if (response.action === 'added' || response.action === 'changed') {
-                        $btn.addClass('active');
-                        $otherBtn.removeClass('active');
-                    } else if (response.action === 'removed') {
-                        $btn.removeClass('active');
-                        $otherBtn.removeClass('active');
-                    }
-                }
-            },
-            function (xhr) {
-                if (xhr.status === 403) {
-                    window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
-                } else if (xhr.status === 400 && xhr.responseJSON && xhr.responseJSON.error) {
-                    alert('Error: ' + xhr.responseJSON.error);
-                }
-            }
-        );
+        handleLike($btn, 'question', questionId);
     });
 
-    $(document).on('click', '.question[data-question-id] .like-btn, .question[data-question-id] .dislike-btn', function (e) {
+    // Обработчики для вопросов на странице вопроса
+    $(document).on('click', '.question[data-question-id] .like-btn:not(.disabled-own), .question[data-question-id] .dislike-btn:not(.disabled-own)', function (e) {
         e.preventDefault();
+        e.stopPropagation();
 
         const $btn = $(this);
         const $container = $btn.closest('.question[data-question-id]');
@@ -101,53 +234,13 @@
 
         if (!questionId) return;
 
-        if (!checkAuth()) {
-            const loginUrl = '/login/?next=' + encodeURIComponent(window.location.pathname);
-            window.location.href = loginUrl;
-            return;
-        }
-
-        const isLikeBtn = $btn.hasClass('like-btn');
-        const value = isLikeBtn ? 1 : -1;
-        const $otherBtn = isLikeBtn ? $container.find('.dislike-btn') : $container.find('.like-btn');
-        const $ratingValue = $container.find('.rating-value');
-
-        $btn.css('transform', 'scale(0.9)');
-        setTimeout(() => {
-            $btn.css('transform', 'scale(1)');
-        }, 150);
-
-        sendAjaxRequest(
-            '/ajax/like/question/',
-            {
-                question_id: questionId,
-                value: value
-            },
-            function (response) {
-                if (response.success) {
-                    $ratingValue.text(response.new_rating);
-
-                    if (response.action === 'added' || response.action === 'changed') {
-                        $btn.addClass('active');
-                        $otherBtn.removeClass('active');
-                    } else if (response.action === 'removed') {
-                        $btn.removeClass('active');
-                        $otherBtn.removeClass('active');
-                    }
-                }
-            },
-            function (xhr) {
-                if (xhr.status === 403) {
-                    window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
-                } else if (xhr.status === 400 && xhr.responseJSON && xhr.responseJSON.error) {
-                    alert('Error: ' + xhr.responseJSON.error);
-                }
-            }
-        );
+        handleLike($btn, 'question', questionId);
     });
 
-    $(document).on('click', '.answer .like-btn, .answer .dislike-btn', function (e) {
+    // Обработчики для ответов
+    $(document).on('click', '.answer .like-btn:not(.disabled-own), .answer .dislike-btn:not(.disabled-own)', function (e) {
         e.preventDefault();
+        e.stopPropagation();
 
         const $btn = $(this);
         const $container = $btn.closest('.answer');
@@ -155,63 +248,32 @@
 
         if (!answerId) return;
 
-        if (!checkAuth()) {
-            const loginUrl = '/login/?next=' + encodeURIComponent(window.location.pathname);
-            window.location.href = loginUrl;
-            return;
-        }
-
-        const isLikeBtn = $btn.hasClass('like-btn');
-        const value = isLikeBtn ? 1 : -1;
-        const $otherBtn = isLikeBtn ? $container.find('.dislike-btn') : $container.find('.like-btn');
-        const $ratingValue = $container.find('.rating-value');
-
-        $btn.css('transform', 'scale(0.9)');
-        setTimeout(() => {
-            $btn.css('transform', 'scale(1)');
-        }, 150);
-
-        sendAjaxRequest(
-            '/ajax/like/answer/',
-            {
-                answer_id: answerId,
-                value: value
-            },
-            function (response) {
-                if (response.success) {
-                    $ratingValue.text(response.new_rating);
-
-                    if (response.action === 'added' || response.action === 'changed') {
-                        $btn.addClass('active');
-                        $otherBtn.removeClass('active');
-                    } else if (response.action === 'removed') {
-                        $btn.removeClass('active');
-                        $otherBtn.removeClass('active');
-                    }
-                }
-            },
-            function (xhr) {
-                if (xhr.status === 403) {
-                    window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
-                } else if (xhr.status === 400 && xhr.responseJSON && xhr.responseJSON.error) {
-                    alert('Error: ' + xhr.responseJSON.error);
-                }
-            }
-        );
+        handleLike($btn, 'answer', answerId);
     });
 
     $(document).on('change', '.correct-checkbox input[type="checkbox"]', function () {
+        if (activeRequest) {
+            $(this).prop('checked', !$(this).prop('checked'));
+            return;
+        }
+
         const $checkbox = $(this);
         const $container = $checkbox.closest('.answer');
         const answerId = $container.data('answer-id');
         const isChecked = $checkbox.is(':checked');
+        
+        const wasChecked = !isChecked;
 
         if (!checkAuth()) {
             const loginUrl = '/login/?next=' + encodeURIComponent(window.location.pathname);
             window.location.href = loginUrl;
-            $checkbox.prop('checked', !isChecked);
+            $checkbox.prop('checked', wasChecked);
             return;
         }
+
+        activeRequest = true;
+        $checkbox.prop('disabled', true);
+        $checkbox.css('cursor', 'wait');
 
         sendAjaxRequest(
             '/ajax/mark-correct/',
@@ -229,38 +291,65 @@
                         $container.removeClass('correct');
                     }
                 } else {
-                    $checkbox.prop('checked', !isChecked);
+                    $checkbox.prop('checked', wasChecked);
                     if (response.error) {
                         alert(response.error);
                     }
                 }
             },
             function (xhr) {
-                $checkbox.prop('checked', !isChecked);
+                $checkbox.prop('checked', wasChecked);
                 if (xhr.status === 403) {
                     alert('Only question author can mark correct answers');
                 } else if (xhr.status === 400 && xhr.responseJSON && xhr.responseJSON.error) {
                     alert('Error: ' + xhr.responseJSON.error);
+                } else {
+                    alert('Network error. Please try again.');
                 }
             }
-        );
+        ).always(function() {
+            activeRequest = false;
+            $checkbox.prop('disabled', false);
+            $checkbox.css('cursor', '');
+        });
     });
 
     $(document).ready(function () {
+        // Инициализация тултипов для неактивных кнопок
+        $('.like-btn.disabled-own, .dislike-btn.disabled-own').each(function() {
+            $(this).attr('title', 'You cannot vote on your own content');
+            $(this).css({
+                'opacity': '0.5',
+                'cursor': 'not-allowed'
+            });
+        });
+
         if (!checkAuth()) {
-            $('.like-btn, .dislike-btn, .correct-checkbox input[type="checkbox"]').each(function () {
+            $('.like-btn:not(.disabled-own), .dislike-btn:not(.disabled-own), .correct-checkbox input[type="checkbox"]').each(function () {
                 $(this).css('cursor', 'pointer');
             });
         }
 
-        $('.like-btn, .dislike-btn').hover(
+        $('.like-btn:not(.disabled-own), .dislike-btn:not(.disabled-own)').hover(
             function () {
+                const $btn = $(this);
+                if ($btn.hasClass('disabled-own')) {
+                    $btn.attr('title', 'You cannot vote on your own content');
+                    return;
+                }
+                
                 if (!checkAuth()) {
-                    $(this).attr('title', 'Login to vote');
+                    $btn.attr('title', 'Login to vote');
+                } else if ($btn.prop('disabled')) {
+                    $btn.attr('title', 'Please wait...');
                 }
             },
             function () {
-                $(this).removeAttr('title');
+                const $btn = $(this);
+                // Не удаляем заголовок, если это предупреждение о своих вопросах
+                if (!$btn.hasClass('disabled-own')) {
+                    $btn.removeAttr('title');
+                }
             }
         );
 
@@ -276,5 +365,27 @@
                 $(this).removeAttr('title');
             }
         );
+        
+        // Добавляем CSS для неактивных кнопок
+        if (!$('style[data-own-buttons]').length) {
+            const style = document.createElement('style');
+            style.setAttribute('data-own-buttons', 'true');
+            style.textContent = `
+                .like-btn.disabled-own, 
+                .dislike-btn.disabled-own {
+                    opacity: 0.5 !important;
+                    cursor: not-allowed !important;
+                    pointer-events: none !important;
+                }
+                
+                .like-btn.disabled-own:hover, 
+                .dislike-btn.disabled-own:hover {
+                    background-color: inherit !important;
+                    transform: none !important;
+                    box-shadow: none !important;
+                }
+            `;
+            document.head.appendChild(style);
+        }
     });
 })();
