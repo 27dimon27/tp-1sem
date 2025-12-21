@@ -274,43 +274,19 @@ def ajax_like_question(request):
         if not form.is_valid():
             return JsonResponse({"success": False, "error": form.errors}, status=400)
 
-        question_id = form.cleaned_data["question_id"]
-        value = form.cleaned_data["value"]
-
-        question = get_object_or_404(Question, id=question_id)
-
-        if request.user == question.author:
+        result = form.process(request.user)
+        if not result["success"]:
             return JsonResponse(
-                {"success": False, "error": "You cannot like your own question"},
-                status=403,
+                {"success": False, "error": result["error"]},
+                status=result.get("status", 400),
             )
-
-        existing_like = QuestionLike.objects.filter(
-            user=request.user, question=question
-        ).first()
-
-        if existing_like:
-            if existing_like.value == value:
-                existing_like.delete()
-                action = "removed"
-            else:
-                existing_like.value = value
-                existing_like.save()
-                action = "changed"
-        else:
-            QuestionLike.objects.get_or_create(
-                user=request.user, question=question, value=value
-            )
-            action = "added"
-
-        question.update_rating()
 
         return JsonResponse(
             {
                 "success": True,
-                "new_rating": question.rating,
-                "action": action,
-                "current_value": value if action != "removed" else 0,
+                "new_rating": result["rating"],
+                "action": result["action"],
+                "current_value": result["current_value"],
             }
         )
 
@@ -327,43 +303,19 @@ def ajax_like_answer(request):
         if not form.is_valid():
             return JsonResponse({"success": False, "error": form.errors}, status=400)
 
-        answer_id = form.cleaned_data["answer_id"]
-        value = form.cleaned_data["value"]
-
-        answer = get_object_or_404(Answer, id=answer_id)
-
-        if request.user == answer.author:
+        result = form.process(request.user)
+        if not result["success"]:
             return JsonResponse(
-                {"success": False, "error": "You cannot like your own answer"},
-                status=403,
+                {"success": False, "error": result["error"]},
+                status=result.get("status", 400),
             )
-
-        existing_like = AnswerLike.objects.filter(
-            user=request.user, answer=answer
-        ).first()
-
-        if existing_like:
-            if existing_like.value == value:
-                existing_like.delete()
-                action = "removed"
-            else:
-                existing_like.value = value
-                existing_like.save()
-                action = "changed"
-        else:
-            AnswerLike.objects.get_or_create(
-                user=request.user, answer=answer, value=value
-            )
-            action = "added"
-
-        answer.update_rating()
 
         return JsonResponse(
             {
                 "success": True,
-                "new_rating": answer.rating,
-                "action": action,
-                "current_value": value if action != "removed" else 0,
+                "new_rating": result["rating"],
+                "action": result["action"],
+                "current_value": result["current_value"],
             }
         )
 

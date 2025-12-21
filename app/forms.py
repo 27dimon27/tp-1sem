@@ -3,12 +3,9 @@ from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.core.exceptions import ValidationError
-from django.core.validators import (
-    FileExtensionValidator,
-    MinValueValidator,
-    MaxValueValidator,
-)
+from django.core.validators import FileExtensionValidator
 from django.db import transaction
+from django.db.models import IntegerChoices
 from .models import Profile, Question, Answer, Tag
 
 MAX_TAGS_COUNT = 5
@@ -16,14 +13,15 @@ MAX_AVATAR_SIZE = 2 * 1024 * 1024
 ALLOWED_IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "gif"]
 
 
-class LikeForm(forms.Form):
-    value = forms.IntegerField(validators=[MinValueValidator(-1), MaxValueValidator(1)])
+class LikeValueChoices(IntegerChoices):
+    DISLIKE = -1, "Dislike"
+    LIKE = 1, "Like"
 
-    def clean_value(self):
-        value = self.cleaned_data.get("value")
-        if value not in [1, -1]:
-            raise ValidationError("Value must be 1 or -1")
-        return value
+
+class LikeForm(forms.Form):
+    value = forms.TypedChoiceField(
+        choices=LikeValueChoices.choices, coerce=int, empty_value=None
+    )
 
 
 class LoginForm(AuthenticationForm):
@@ -282,9 +280,95 @@ class ProfileForm(forms.ModelForm):
 class QuestionLikeForm(LikeForm):
     question_id = forms.IntegerField(min_value=1)
 
+    def process(self, user):
+        from .models import Question, QuestionLike
+
+        question_id = self.cleaned_data["question_id"]
+        value = self.cleaned_data["value"]
+
+        question = Question.objects.get(id=question_id)
+
+        if user == question.author:
+            return {
+                "success": False,
+                "error": "You cannot like your own question",
+                "status": 403,
+            }
+
+        existing_like = QuestionLike.objects.filter(
+            user=user, question=question
+        ).first()
+
+        if existing_like:
+            if existing_like.value == value:
+                existing_like.delete()
+                action = "removed"
+                current_value = 0
+            else:
+                existing_like.value = value
+                existing_like.save()
+                action = "changed"
+                current_value = value
+        else:
+            QuestionLike.objects.get_or_create(
+                user=user, question=question, value=value
+            )
+            action = "added"
+            current_value = value
+
+        question.update_rating()
+
+        return {
+            "success": True,
+            "rating": question.rating,
+            "action": action,
+            "current_value": current_value,
+        }
+
 
 class AnswerLikeForm(LikeForm):
     answer_id = forms.IntegerField(min_value=1)
+
+    def process(self, user):
+        from .models import Answer, AnswerLike
+
+        answer_id = self.cleaned_data["answer_id"]
+        value = self.cleaned_data["value"]
+
+        answer = Answer.objects.get(id=answer_id)
+
+        if user == answer.author:
+            return {
+                "success": False,
+                "error": "You cannot like your own answer",
+                "status": 403,
+            }
+
+        existing_like = AnswerLike.objects.filter(user=user, answer=answer).first()
+
+        if existing_like:
+            if existing_like.value == value:
+                existing_like.delete()
+                action = "removed"
+                current_value = 0
+            else:
+                existing_like.value = value
+                existing_like.save()
+                action = "changed"
+                current_value = value
+        else:
+            AnswerLike.objects.get_or_create(user=user, answer=answer, value=value)
+            action = "added"
+            current_value = value
+
+        answer.update_rating()
+
+        return {
+            "success": True,
+            "rating": answer.rating,
+            "action": action,
+            "current_value": current_value,
+        }
 
 
 class MarkCorrectForm(forms.Form):
