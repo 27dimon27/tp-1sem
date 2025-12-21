@@ -13,5 +13,8 @@ urlpatterns = [
     path("signup/", views.signup_view, name="signup"),
     path("ask/", views.ask_question, name="ask"),
     path("settings/", views.SettingsView.as_view(), name="settings"),
-    path("logout/", views.logout_view, name="logout")
+    path("logout/", views.logout_view, name="logout"),
+    path("ajax/like/question/", views.ajax_like_question, name="ajax_like_question"),
+    path("ajax/like/answer/", views.ajax_like_answer, name="ajax_like_answer"),
+    path("ajax/mark-correct/", views.ajax_mark_correct, name="ajax_mark_correct"),
 ]

@@ -8,7 +8,21 @@ from django.urls import reverse_lazy
 from django.http import HttpRequest
 from django.db import transaction
 from .models import Question, Tag, Profile
-from .forms import LoginForm, SignupForm, AskForm, AnswerForm, SettingsForm, ProfileForm
+from .forms import (
+    MarkCorrectForm,
+    AnswerLikeForm,
+    LoginForm,
+    QuestionLikeForm,
+    SignupForm,
+    AskForm,
+    AnswerForm,
+    SettingsForm,
+    ProfileForm,
+)
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from .models import Answer, QuestionLike, AnswerLike
+from django.db.models import Case, When, IntegerField
 
 ITEMS_PER_PAGE = 5
 
@@ -40,7 +54,15 @@ def paginate(objects_list, request, per_page=10):
 def index(request: HttpRequest):
     questions = Question.objects.new_questions()
     page = paginate(questions, request, ITEMS_PER_PAGE)
-    context = {"questions": page, "page_title": "New Questions"}
+
+    questions_ids = list(page.object_list.values_list("id", flat=True))
+    user_votes = get_user_votes(request.user, questions_ids=questions_ids)
+
+    context = {
+        "questions": page,
+        "page_title": "New Questions",
+        "user_votes": user_votes,
+    }
     context.update(get_common_context())
     return render(request, "index.html", context)
 
@@ -48,7 +70,15 @@ def index(request: HttpRequest):
 def hot_questions(request: HttpRequest):
     questions = Question.objects.best_questions()
     page = paginate(questions, request, ITEMS_PER_PAGE)
-    context = {"questions": page, "page_title": "Hot Questions"}
+
+    questions_ids = list(page.object_list.values_list("id", flat=True))
+    user_votes = get_user_votes(request.user, questions_ids=questions_ids)
+
+    context = {
+        "questions": page,
+        "page_title": "Hot Questions",
+        "user_votes": user_votes,
+    }
     context.update(get_common_context())
     return render(request, "index.html", context)
 
@@ -62,11 +92,16 @@ def tag_questions(request: HttpRequest, tag_name):
         .order_by("-created_date")
     )
     page = paginate(questions, request, ITEMS_PER_PAGE)
+
+    questions_ids = list(page.object_list.values_list("id", flat=True))
+    user_votes = get_user_votes(request.user, questions_ids=questions_ids)
+
     context = {
         "questions": page,
         "page_title": f"Tag: {tag_name}",
         "is_tag_page": True,
         "current_tag": tag_name,
+        "user_votes": user_votes,
     }
     context.update(get_common_context())
     return render(request, "index.html", context)
@@ -103,7 +138,19 @@ def question_detail(request: HttpRequest, question_id):
     page = paginate(answers, request, ITEMS_PER_PAGE)
     form = AnswerForm()
 
-    context = {"question": question, "answers": page, "form": form}
+    answers_ids = list(answers.values_list("id", flat=True))
+
+    user_votes = get_user_votes(
+        request.user, question_id=question_id, answers_ids=answers_ids
+    )
+
+    context = {
+        "question": question,
+        "answers": page,
+        "form": form,
+        "user_votes": user_votes,
+        "is_question_author": request.user == question.author,
+    }
     context.update(get_common_context())
     return render(request, "question.html", context)
 
@@ -216,3 +263,132 @@ class SettingsView(LoginRequiredMixin, FormView):
 def settings_view(request: HttpRequest):
     view = SettingsView.as_view()
     return view(request)
+
+
+@require_POST
+@login_required
+@transaction.atomic
+def ajax_like_question(request):
+    try:
+        form = QuestionLikeForm(request.POST)
+        if not form.is_valid():
+            return JsonResponse({"success": False, "error": form.errors}, status=400)
+
+        result = form.process(request.user)
+        if not result["success"]:
+            return JsonResponse(
+                {"success": False, "error": result["error"]},
+                status=result.get("status", 400),
+            )
+
+        return JsonResponse(
+            {
+                "success": True,
+                "new_rating": result["rating"],
+                "action": result["action"],
+                "current_value": result["current_value"],
+            }
+        )
+
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+@require_POST
+@login_required
+@transaction.atomic
+def ajax_like_answer(request):
+    try:
+        form = AnswerLikeForm(request.POST)
+        if not form.is_valid():
+            return JsonResponse({"success": False, "error": form.errors}, status=400)
+
+        result = form.process(request.user)
+        if not result["success"]:
+            return JsonResponse(
+                {"success": False, "error": result["error"]},
+                status=result.get("status", 400),
+            )
+
+        return JsonResponse(
+            {
+                "success": True,
+                "new_rating": result["rating"],
+                "action": result["action"],
+                "current_value": result["current_value"],
+            }
+        )
+
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+@require_POST
+@login_required
+@transaction.atomic
+def ajax_mark_correct(request):
+    try:
+        form = MarkCorrectForm(request.POST)
+        if not form.is_valid():
+            return JsonResponse({"success": False, "error": form.errors}, status=400)
+
+        answer_id = form.cleaned_data["answer_id"]
+        is_correct = form.cleaned_data["is_correct"]
+
+        answer = get_object_or_404(Answer, id=answer_id)
+        question = answer.question
+
+        if request.user != question.author:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Only question author can mark answers as correct",
+                },
+                status=403,
+            )
+
+        if is_correct:
+            Answer.objects.filter(question=question).update(is_correct=False)
+
+        answer.is_correct = is_correct
+        answer.save()
+
+        return JsonResponse({"success": True})
+
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+def get_user_votes(user, question_id=None, questions_ids=None, answers_ids=None):
+    votes = {"question": None, "answers": {}, "questions": {}}
+
+    if user.is_authenticated:
+        if question_id:
+            question_like = (
+                QuestionLike.objects.filter(user=user, question_id=question_id)
+                .annotate(
+                    value_int=Case(
+                        When(value=1, then=1),
+                        When(value=-1, then=-1),
+                        default=None,
+                        output_field=IntegerField(),
+                    )
+                )
+                .first()
+            )
+            if question_like:
+                votes["question"] = question_like.value
+
+        if questions_ids:
+            question_likes = QuestionLike.objects.filter(
+                user=user, question_id__in=questions_ids
+            ).values_list("question_id", "value")
+            votes["questions"] = dict(question_likes)
+
+        if answers_ids:
+            answer_likes = AnswerLike.objects.filter(
+                user=user, answer_id__in=answers_ids
+            ).values_list("answer_id", "value")
+            votes["answers"] = dict(answer_likes)
+
+    return votes
